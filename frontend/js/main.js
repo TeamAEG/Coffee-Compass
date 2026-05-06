@@ -100,6 +100,7 @@ function renderCoffeeCard(c) {
             </div>
             <div class="coffee-meta">${meta}</div>
             <div class="tasting-notes">${notes}</div>
+            <div class="card-spacer"></div>
             ${starsHtml}
             <div class="coffee-actions">
                 <button class="compare-btn ${isCompared ? 'active' : ''}" data-action="compare" data-id="${escapeHtml(c.id)}" title="Zum Vergleich hinzufügen">⇄</button>

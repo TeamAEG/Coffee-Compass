@@ -479,6 +479,9 @@ button[data-action="unfav"]:hover::after {
 }
 
 /* Card bean rating */
+.card-spacer {
+    flex: 1;
+}
 .card-stars {
     display: flex;
     gap: 0.35rem;
