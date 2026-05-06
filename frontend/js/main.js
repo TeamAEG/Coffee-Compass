@@ -1,10 +1,19 @@
-Auth.requireLogin();
+const usernameLabel = document.getElementById("usernameLabel");
+const logoutBtn = document.getElementById("logoutBtn");
 
-document.getElementById("usernameLabel").textContent = Auth.username() || "";
-document.getElementById("logoutBtn").addEventListener("click", () => {
-    Auth.clear();
-    window.location.href = "login.html";
-});
+if (Auth.isLoggedIn()) {
+    usernameLabel.textContent = Auth.username() || "";
+    logoutBtn.addEventListener("click", () => {
+        Auth.clear();
+        window.location.href = "login.html";
+    });
+} else {
+    usernameLabel.textContent = "";
+    logoutBtn.textContent = "Login";
+    logoutBtn.addEventListener("click", () => {
+        window.location.href = "login.html";
+    });
+}
 
 const listEl = document.getElementById("coffeeList");
 const messageBox = document.getElementById("messageBox");
@@ -96,10 +105,13 @@ listEl.addEventListener("click", async (e) => {
 
     if (action === "brew") {
         await openBrewModal(coffee);
-    } else if (action === "fav") {
-        await addFavorite(coffee, btn);
-    } else if (action === "unfav") {
-        await removeFavorite(coffee, btn);
+    } else if (action === "fav" || action === "unfav") {
+        if (!Auth.isLoggedIn()) {
+            window.location.href = "login.html";
+            return;
+        }
+        if (action === "fav") await addFavorite(coffee, btn);
+        else await removeFavorite(coffee, btn);
     }
 });
 
