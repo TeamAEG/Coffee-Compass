@@ -104,6 +104,16 @@ const API = {
         return request("DELETE", "/favorites/" + id);
     },
 
+    getRatings() {
+        return request("GET", "/ratings");
+    },
+    setRating(coffeeId, rating) {
+        return request("POST", "/ratings/" + encodeURIComponent(coffeeId), { rating });
+    },
+    removeRating(coffeeId) {
+        return request("DELETE", "/ratings/" + encodeURIComponent(coffeeId));
+    },
+
     quizQuestions() {
         return request("GET", "/quiz/questions");
     },

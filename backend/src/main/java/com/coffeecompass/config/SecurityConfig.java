@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/match").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/favorites/**").authenticated()
+                        .requestMatchers("/api/ratings/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 .headers(h -> h.frameOptions(f -> f.disable()))

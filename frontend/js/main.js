@@ -26,6 +26,7 @@ const modalContainer = document.getElementById("modalContainer");
 
 let currentCoffees = [];
 let userFavorites = new Map();
+let userRatings = new Map();
 const compareSet = new Set();
 
 let debounceTimer = null;
@@ -43,12 +44,14 @@ async function loadCoffees() {
             roastLevel: roastFilter.value,
             origin: originFilter.value.trim()
         };
-        const [coffees, favs] = await Promise.all([
+        const [coffees, favs, ratings] = await Promise.all([
             API.listCoffees(params),
-            API.listFavorites().catch(() => [])
+            API.listFavorites().catch(() => []),
+            API.getRatings().catch(() => [])
         ]);
         currentCoffees = coffees;
         userFavorites = new Map(favs.map(f => [f.coffeeId, f]));
+        userRatings = new Map(ratings.map(r => [r.coffeeId, r.rating]));
         renderCoffees(coffees);
     } catch (err) {
         showError(messageBox, "Fehler beim Laden: " + err.message);
@@ -70,8 +73,7 @@ function renderCoffees(coffees) {
 
 function renderCoffeeCard(c) {
     const isFav = userFavorites.has(c.id);
-    const fav = userFavorites.get(c.id);
-    const rating = fav ? (fav.rating || 0) : 0;
+    const rating = userRatings.get(c.id) || 0;
     const isCompared = compareSet.has(c.id);
     const roastClass = c.roastLevel ? `roast-${c.roastLevel.toLowerCase()}` : "roast-medium";
     const roastLabel = c.roastLevel ? c.roastLevel : "—";
@@ -80,7 +82,7 @@ function renderCoffeeCard(c) {
     const meta = [c.origin, c.process, c.type].filter(Boolean)
         .map(m => `<span>${escapeHtml(m)}</span>`).join("");
 
-    const starsHtml = isFav ? `
+    const starsHtml = Auth.isLoggedIn() ? `
         <div class="card-stars" data-coffee-id="${escapeHtml(c.id)}">
             ${[1,2,3,4,5].map(i =>
                 `<span class="card-star ${i <= rating ? 'filled' : ''}" data-rating="${i}" data-coffee-id="${escapeHtml(c.id)}">${beanSvg(i <= rating)}</span>`
@@ -117,11 +119,9 @@ listEl.addEventListener("click", async (e) => {
         if (!Auth.isLoggedIn()) { window.location.href = "login.html"; return; }
         const coffeeId = star.dataset.coffeeId;
         const newRating = parseInt(star.dataset.rating, 10);
-        const fav = userFavorites.get(coffeeId);
-        if (!fav) return;
         try {
-            await API.patchFavorite(fav.id, { rating: newRating });
-            userFavorites.set(coffeeId, { ...fav, rating: newRating });
+            await API.setRating(coffeeId, newRating);
+            userRatings.set(coffeeId, newRating);
             const container = document.querySelector(`.card-stars[data-coffee-id="${coffeeId}"]`);
             if (container) {
                 container.querySelectorAll(".card-star").forEach(s => {
@@ -189,15 +189,7 @@ async function addFavorite(coffee, btn) {
         userFavorites.set(coffee.id, fav);
         btn.textContent = "★ Favorit";
         btn.dataset.action = "unfav";
-        const card = btn.closest(".coffee-card");
-        card.classList.add("is-favorite");
-        const starsDiv = document.createElement("div");
-        starsDiv.className = "card-stars";
-        starsDiv.dataset.coffeeId = coffee.id;
-        starsDiv.innerHTML = [1,2,3,4,5].map(i =>
-            `<span class="card-star" data-rating="${i}" data-coffee-id="${escapeHtml(coffee.id)}">${beanSvg(false)}</span>`
-        ).join("");
-        card.querySelector(".coffee-actions").before(starsDiv);
+        btn.closest(".coffee-card").classList.add("is-favorite");
     } catch (err) {
         alert("Konnte nicht speichern: " + err.message);
     } finally {
@@ -214,10 +206,7 @@ async function removeFavorite(coffee, btn) {
         userFavorites.delete(coffee.id);
         btn.textContent = "☆ Speichern";
         btn.dataset.action = "fav";
-        const card = btn.closest(".coffee-card");
-        card.classList.remove("is-favorite");
-        const starsDiv = card.querySelector(".card-stars");
-        if (starsDiv) starsDiv.remove();
+        btn.closest(".coffee-card").classList.remove("is-favorite");
     } catch (err) {
         alert("Konnte nicht entfernen: " + err.message);
     } finally {
