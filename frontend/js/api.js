@@ -1,4 +1,4 @@
-const API_BASE = "https://coffee-compass.trebi2.net/api";
+const API_BASE = "https://coffee-compass.net/api";
 const TOKEN_KEY = "cc_token";
 const USER_KEY = "cc_username";
 const EXPIRES_KEY = "cc_expires";
@@ -102,6 +102,16 @@ const API = {
     },
     deleteFavorite(id) {
         return request("DELETE", "/favorites/" + id);
+    },
+
+    getRatings() {
+        return request("GET", "/ratings");
+    },
+    setRating(coffeeId, rating) {
+        return request("POST", "/ratings/" + encodeURIComponent(coffeeId), { rating });
+    },
+    removeRating(coffeeId) {
+        return request("DELETE", "/ratings/" + encodeURIComponent(coffeeId));
     },
 
     quizQuestions() {
