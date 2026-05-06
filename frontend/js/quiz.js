@@ -1,10 +1,19 @@
-Auth.requireLogin();
+const usernameLabel = document.getElementById("usernameLabel");
+const logoutBtn = document.getElementById("logoutBtn");
 
-document.getElementById("usernameLabel").textContent = Auth.username() || "";
-document.getElementById("logoutBtn").addEventListener("click", () => {
-    Auth.clear();
-    window.location.href = "login.html";
-});
+if (Auth.isLoggedIn()) {
+    usernameLabel.textContent = Auth.username() || "";
+    logoutBtn.addEventListener("click", () => {
+        Auth.clear();
+        window.location.href = "login.html";
+    });
+} else {
+    usernameLabel.textContent = "";
+    logoutBtn.textContent = "Login";
+    logoutBtn.addEventListener("click", () => {
+        window.location.href = "login.html";
+    });
+}
 
 const quizArea = document.getElementById("quizArea");
 const modalContainer = document.getElementById("modalContainer");
@@ -158,6 +167,10 @@ async function handleResultClick(e) {
     const roaster = card.querySelector(".coffee-roaster").textContent;
     const roastLevel = card.querySelector(".roast-badge").textContent;
 
+    if (!Auth.isLoggedIn()) {
+        window.location.href = "login.html";
+        return;
+    }
     btn.disabled = true;
     try {
         await API.addFavorite({
