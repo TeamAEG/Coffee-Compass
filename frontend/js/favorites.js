@@ -1,7 +1,9 @@
 Auth.requireLogin();
 
 document.getElementById("usernameLabel").textContent = Auth.username() || "";
-document.getElementById("logoutBtn").addEventListener("click", () => {
+const logoutBtn = document.getElementById("logoutBtn");
+logoutBtn.textContent = "Logout";
+logoutBtn.addEventListener("click", () => {
     Auth.clear();
     window.location.href = "login.html";
 });
@@ -40,7 +42,7 @@ function renderCard(f) {
     const roastClass = f.roastLevel ? `roast-${f.roastLevel.toLowerCase()}` : "roast-medium";
     const stars = renderStars(f.rating || 0, f.id, false);
     return `
-        <article class="coffee-card" data-id="${f.id}">
+        <article class="coffee-card expandable" data-id="${f.id}">
             <div class="coffee-card-head">
                 <div>
                     <div class="coffee-name">${escapeHtml(f.coffeeName)}</div>
@@ -54,7 +56,24 @@ function renderCard(f) {
                 <button class="secondary" data-action="edit" data-id="${f.id}">Bearbeiten</button>
                 <button class="danger" data-action="delete" data-id="${f.id}">Entfernen</button>
             </div>
+            <div class="brew-expand" id="brew-${f.id}"><div class="brew-expand-inner"></div></div>
+            <div class="brew-footer">☕ Klicke für Brew-Infos</div>
         </article>`;
+}
+
+function renderBrewContent(brew) {
+    const html = (brew.methods || []).map(m => `
+        <div class="brew-method">
+            <h4>${escapeHtml(m.name)}</h4>
+            <div style="font-size: 0.85rem; color: var(--coffee-muted);">${escapeHtml(m.setup)}</div>
+            <div class="brew-stats">
+                <span><strong>Wasser</strong> ${m.waterTempC}°C</span>
+                <span><strong>Verhältnis</strong> ${escapeHtml(m.ratio)}</span>
+                <span><strong>Zeit</strong> ${escapeHtml(m.time)}</span>
+            </div>
+            <div style="font-size: 0.9rem;">${escapeHtml(m.description)}</div>
+        </div>`).join("");
+    return html || `<p>Keine Brew-Empfehlungen verfügbar.</p>`;
 }
 
 function renderStars(rating, favId, interactive) {
@@ -75,13 +94,37 @@ listEl.addEventListener("click", async (e) => {
     }
 
     const btn = e.target.closest("button[data-action]");
-    if (!btn) return;
-    const id = btn.dataset.id;
+    if (btn) {
+        const id = btn.dataset.id;
+        const fav = favorites.find(f => String(f.id) === String(id));
+        if (!fav) return;
+        if (btn.dataset.action === "edit") openEditModal(fav);
+        else if (btn.dataset.action === "delete") deleteFavorite(fav);
+        return;
+    }
+
+    const card = e.target.closest(".coffee-card.expandable");
+    if (!card) return;
+    const id = card.dataset.id;
     const fav = favorites.find(f => String(f.id) === String(id));
     if (!fav) return;
 
-    if (btn.dataset.action === "edit") openEditModal(fav);
-    else if (btn.dataset.action === "delete") deleteFavorite(fav);
+    const brewEl = document.getElementById(`brew-${id}`);
+    if (!brewEl) return;
+    const isOpen = brewEl.classList.contains("open");
+    if (isOpen) { brewEl.classList.remove("open"); return; }
+
+    brewEl.classList.add("open");
+    const inner = brewEl.querySelector(".brew-expand-inner");
+    if (inner.dataset.loaded) return;
+    inner.dataset.loaded = "true";
+    inner.innerHTML = `<div class="loading-overlay" style="position:relative;height:60px;"><div class="spinner"></div></div>`;
+    try {
+        const brew = await API.getBrew(fav.coffeeId);
+        inner.innerHTML = renderBrewContent(brew);
+    } catch (err) {
+        inner.innerHTML = `<div class="alert alert-error">Fehler: ${escapeHtml(err.message)}</div>`;
+    }
 });
 
 async function updateRating(favId, rating) {

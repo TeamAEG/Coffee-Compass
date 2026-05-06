@@ -11,10 +11,10 @@
 </head>
 <body>
     <header class="app-header">
-        <div class="brand">
+        <a href="index.html" class="brand">
             <div class="brand-icon">☕</div>
             <span>Coffee Compass</span>
-        </div>
+        </a>
         <nav class="nav">
             <a href="index.html" class="active">Entdecken</a>
             <a href="favorites.html">Favoriten</a>
@@ -66,6 +66,12 @@
     </main>
 
     <div id="modalContainer"></div>
+
+    <div id="compareBar" class="compare-bar">
+        <div id="compareChips" class="compare-bar-chips"></div>
+        <button id="compareNowBtn" class="compare-now-btn">Jetzt vergleichen (0)</button>
+        <button id="clearCompareBtn" class="secondary compare-clear-btn">✕ Leeren</button>
+    </div>
 
     <script src="js/api.js"></script>
     <script src="js/main.js"></script>
