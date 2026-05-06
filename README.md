@@ -2,7 +2,7 @@
 
 Eine Webanwendung zum Entdecken, Speichern und Empfehlen von Kaffees auf Basis persönlicher Vorlieben.
 
-https://coffee-compass.trebi2.net/
+https://coffee-compass.net/
 
 ## Tech Stack
 
