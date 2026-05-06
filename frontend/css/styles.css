@@ -406,6 +406,20 @@ label {
 .coffee-card.expandable {
     cursor: pointer;
 }
+.coffee-card.is-favorite {
+    border-left: 3px solid var(--coffee-medium);
+    background: linear-gradient(135deg, rgba(180, 120, 60, 0.06) 0%, transparent 60%);
+}
+button[data-action="unfav"]:hover {
+    background: #c0392b;
+    border-color: #c0392b;
+    color: #fff;
+    font-size: 0;
+}
+button[data-action="unfav"]:hover::after {
+    content: "✕ Entfernen";
+    font-size: 0.95rem;
+}
 .brew-footer {
     display: flex;
     align-items: center;
@@ -462,6 +476,160 @@ label {
 .rating {
     display: inline-flex;
     gap: 0.15rem;
+}
+
+/* Card star rating */
+.card-stars {
+    display: flex;
+    gap: 0.1rem;
+    padding: 0.4rem 0 0.1rem;
+}
+.card-star {
+    cursor: pointer;
+    color: var(--coffee-cream);
+    font-size: 1.1rem;
+    transition: color 0.15s ease, transform 0.1s ease;
+}
+.card-star:hover,
+.card-star.filled {
+    color: #d4a017;
+}
+.card-star:hover {
+    transform: scale(1.2);
+}
+
+/* Compare button on card */
+.compare-btn {
+    background: transparent;
+    border: 1px solid var(--coffee-border);
+    color: var(--coffee-muted);
+    padding: 0.35rem 0.6rem;
+    font-size: 1rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    line-height: 1;
+}
+.compare-btn:hover {
+    background: var(--coffee-foam);
+    color: var(--coffee-bean);
+    border-color: var(--coffee-medium);
+}
+.compare-btn.active {
+    background: var(--coffee-medium);
+    color: #fff;
+    border-color: var(--coffee-medium);
+}
+
+/* Compared card highlight */
+.coffee-card.is-compared {
+    outline: 2px solid var(--coffee-medium);
+    outline-offset: 2px;
+}
+
+/* Floating compare bar */
+.compare-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--coffee-bean);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1.5rem;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    z-index: 100;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    flex-wrap: wrap;
+}
+.compare-bar.visible {
+    transform: translateY(0);
+}
+.compare-bar-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    flex: 1;
+}
+.compare-chip {
+    background: rgba(255,255,255,0.15);
+    border-radius: 100px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.compare-chip-remove {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.75rem;
+    opacity: 0.7;
+    line-height: 1;
+}
+.compare-chip-remove:hover { opacity: 1; }
+.compare-now-btn {
+    background: #fff;
+    color: var(--coffee-bean);
+    border: none;
+    padding: 0.5rem 1.1rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.compare-now-btn:hover { background: var(--coffee-cream); }
+.compare-clear-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    white-space: nowrap;
+}
+.compare-clear-btn:hover { background: rgba(255,255,255,0.1); }
+
+/* Compare modal */
+.compare-modal {
+    max-width: 800px;
+    width: 95vw;
+}
+.compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+.compare-table th {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--coffee-bean);
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid var(--coffee-border);
+}
+.compare-th-sub {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: normal;
+    color: var(--coffee-muted);
+    margin-top: 0.15rem;
+}
+.compare-table td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--coffee-border);
+    vertical-align: top;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-label {
+    font-weight: 600;
+    color: var(--coffee-muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+    width: 110px;
 }
 .star {
     cursor: pointer;
