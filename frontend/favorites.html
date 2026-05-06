@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Compass — Meine Favoriten</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">
+            <div class="brand-icon">☕</div>
+            <span>Coffee Compass</span>
+        </div>
+        <nav class="nav">
+            <a href="index.html">Entdecken</a>
+            <a href="favorites.html" class="active">Favoriten</a>
+            <a href="quiz.html">Find Your Perfect Coffee</a>
+        </nav>
+        <div class="user-info">
+            <span id="usernameLabel"></span>
+            <button class="secondary" id="logoutBtn" style="padding: 0.45rem 0.9rem; font-size: 0.85rem;">Abmelden</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <h1>Meine Favoriten</h1>
+            <p>Deine gespeicherten Kaffees mit persönlichen Notizen und Bewertung.</p>
+        </section>
+
+        <div id="messageBox"></div>
+
+        <section id="favoritesList" class="coffee-grid" aria-live="polite">
+            <div class="loading-overlay"><div class="spinner"></div></div>
+        </section>
+    </main>
+
+    <div id="modalContainer"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/favorites.js"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Compass — Anmelden</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <main class="auth-wrap">
+        <section class="auth-card">
+            <div class="brand">
+                <div class="brand-icon">☕</div>
+                <span>Coffee Compass</span>
+            </div>
+
+            <h2 id="formTitle" style="text-align: center; margin-bottom: 1.5rem;">Willkommen zurück</h2>
+
+            <div id="messageBox"></div>
+
+            <form id="authForm" novalidate>
+                <div class="form-group">
+                    <label for="username">Benutzername</label>
+                    <input type="text" id="username" name="username" required minlength="3" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Passwort</label>
+                    <input type="password" id="password" name="password" required minlength="6" autocomplete="current-password">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" id="submitBtn">Anmelden</button>
+                </div>
+            </form>
+
+            <p class="auth-toggle">
+                <span id="toggleText">Noch keinen Account?</span>
+                <a href="#" id="toggleMode">Registrieren</a>
+            </p>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script>
+        let mode = "login";
+        const form = document.getElementById("authForm");
+        const messageBox = document.getElementById("messageBox");
+        const submitBtn = document.getElementById("submitBtn");
+        const formTitle = document.getElementById("formTitle");
+        const toggleLink = document.getElementById("toggleMode");
+        const toggleText = document.getElementById("toggleText");
+
+        if (Auth.isLoggedIn()) {
+            window.location.href = "index.html";
+        }
+
+        toggleLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            mode = mode === "login" ? "register" : "login";
+            if (mode === "login") {
+                formTitle.textContent = "Willkommen zurück";
+                submitBtn.textContent = "Anmelden";
+                toggleText.textContent = "Noch keinen Account?";
+                toggleLink.textContent = "Registrieren";
+            } else {
+                formTitle.textContent = "Account erstellen";
+                submitBtn.textContent = "Registrieren";
+                toggleText.textContent = "Schon registriert?";
+                toggleLink.textContent = "Anmelden";
+            }
+            messageBox.innerHTML = "";
+        });
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "...";
+            messageBox.innerHTML = "";
+
+            try {
+                const data = mode === "login"
+                    ? await API.login(username, password)
+                    : await API.register(username, password);
+                Auth.save(data.token, data.username, data.expiresAt);
+                window.location.href = "index.html";
+            } catch (err) {
+                showError(messageBox, err.message || "Ein Fehler ist aufgetreten");
+                submitBtn.disabled = false;
+                submitBtn.textContent = mode === "login" ? "Anmelden" : "Registrieren";
+            }
+        });
+    </script>
+</body>
+</html>

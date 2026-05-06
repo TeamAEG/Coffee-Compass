@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Compass — Entdecke Kaffee</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">
+            <div class="brand-icon">☕</div>
+            <span>Coffee Compass</span>
+        </div>
+        <nav class="nav">
+            <a href="index.html" class="active">Entdecken</a>
+            <a href="favorites.html">Favoriten</a>
+            <a href="quiz.html">Find Your Perfect Coffee</a>
+        </nav>
+        <div class="user-info">
+            <span id="usernameLabel"></span>
+            <button class="secondary" id="logoutBtn" style="padding: 0.45rem 0.9rem; font-size: 0.85rem;">Abmelden</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <h1>Finde deinen idealen Kaffee</h1>
+            <p>Durchsuche kuratierte Kaffees aus der ganzen Welt — gefiltert nach Röstung, Herkunft und Geschmack.</p>
+        </section>
+
+        <section class="filter-bar" aria-label="Filter">
+            <div>
+                <label for="search">Suche</label>
+                <input type="text" id="search" placeholder="Name, Rösterei oder Note...">
+            </div>
+            <div>
+                <label for="roastFilter">Röstung</label>
+                <select id="roastFilter">
+                    <option value="">Alle</option>
+                    <option value="light">Hell</option>
+                    <option value="medium">Mittel</option>
+                    <option value="dark">Dunkel</option>
+                </select>
+            </div>
+            <div>
+                <label for="originFilter">Herkunft</label>
+                <input type="text" id="originFilter" placeholder="z.B. Ethiopia">
+            </div>
+            <div>
+                <button id="resetBtn" class="secondary">Zurücksetzen</button>
+            </div>
+        </section>
+
+        <div id="messageBox"></div>
+
+        <section id="coffeeList" class="coffee-grid" aria-live="polite">
+            <div class="loading-overlay">
+                <div class="spinner"></div>
+                <p style="margin-top: 0.6rem;">Lade Kaffees...</p>
+            </div>
+        </section>
+    </main>
+
+    <div id="modalContainer"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
