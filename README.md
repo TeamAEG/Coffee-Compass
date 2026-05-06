@@ -4,7 +4,7 @@ Eine Webanwendung zum Entdecken, Speichern und Empfehlen von Kaffees auf Basis p
 
 ## Tech Stack
 
-- **Backend**: Java 17, Spring Boot 3.2, Maven, H2 (in-memory), JWT
+- **Backend**: Java 21, Spring Boot 3.2, Maven, H2 (in-memory), JWT
 - **Frontend**: HTML5, CSS, Vanilla JS (kein Framework)
 - **Externe API**: [Third Wave Coffee Base](https://thirdwavecoffeebase.com)
 
@@ -31,45 +31,6 @@ coffee-compass/
     └── js/                   api.js, main.js, favorites.js, quiz.js
 ```
 
-## Setup & Start
-
-### Backend starten
-
-Voraussetzungen: **JDK 17+** und **Maven 3.8+**
-
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-Backend läuft auf `http://localhost:8080`.
-H2-Konsole verfügbar unter `http://localhost:8080/h2-console`
-(JDBC URL: `jdbc:h2:mem:coffeecompass`, User: `sa`, Passwort leer).
-
-### Frontend starten
-
-Das Frontend braucht einen einfachen Static-Server, da fetch-Requests von `file://`
-durch CORS blockiert werden. Mit VS Code → Extension **Live Server** oder per CLI:
-
-```bash
-cd frontend
-python3 -m http.server 5500
-```
-
-Dann öffnen: `http://localhost:5500/login.html`
-
-> **Wichtig**: Wenn ein anderer Port als 5500 / 3000 / 8081 verwendet wird, muss
-> `app.cors.allowed-origins` in `backend/src/main/resources/application.properties`
-> entsprechend angepasst werden.
-
-## Erste Schritte
-
-1. Backend starten
-2. Frontend-Server starten
-3. `http://localhost:5500/login.html` öffnen
-4. Auf "Registrieren" klicken und Account anlegen (mind. 3 Zeichen Name, 6 Zeichen Passwort)
-5. Kaffees entdecken, filtern, favorisieren
-6. Quiz starten unter "Find Your Perfect Coffee"
 
 ## API-Übersicht
 
