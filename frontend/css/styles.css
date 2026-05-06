@@ -479,12 +479,14 @@ button[data-action="unfav"]:hover::after {
 }
 
 /* Card bean rating */
+.card-spacer {
+    flex: 1;
+}
 .card-stars {
     display: flex;
     gap: 0.35rem;
     padding: 0.4rem 0 0.1rem;
     align-items: center;
-    margin-top: auto;
 }
 .card-star {
     cursor: pointer;
