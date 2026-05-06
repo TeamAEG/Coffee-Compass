@@ -3,6 +3,7 @@ const logoutBtn = document.getElementById("logoutBtn");
 
 if (Auth.isLoggedIn()) {
     usernameLabel.textContent = Auth.username() || "";
+    logoutBtn.textContent = "Logout";
     logoutBtn.addEventListener("click", () => {
         Auth.clear();
         window.location.href = "login.html";

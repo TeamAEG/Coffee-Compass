@@ -129,6 +129,7 @@ label {
     font-size: 1.4rem;
     font-weight: 600;
     color: var(--coffee-bean);
+    text-decoration: none;
 }
 
 .brand-icon {
@@ -401,6 +402,40 @@ label {
     line-height: 1;
 }
 .close-btn:hover { background: var(--coffee-foam); color: var(--coffee-bean); }
+
+.coffee-card.expandable {
+    cursor: pointer;
+}
+.brew-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--coffee-muted);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--coffee-border);
+    margin-top: 0.5rem;
+    pointer-events: none;
+}
+.coffee-card.expandable:hover .brew-footer {
+    opacity: 1;
+}
+.brew-expand {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+}
+.brew-expand.open {
+    max-height: 600px;
+}
+.brew-expand-inner {
+    padding-top: 1rem;
+    border-top: 1px solid var(--coffee-border);
+    margin-top: 0.75rem;
+}
 
 .brew-method {
     background: var(--coffee-bg);
