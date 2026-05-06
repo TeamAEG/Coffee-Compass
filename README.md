@@ -2,6 +2,8 @@
 
 Eine Webanwendung zum Entdecken, Speichern und Empfehlen von Kaffees auf Basis persönlicher Vorlieben.
 
+https://coffee-compass.trebi2.net/
+
 ## Tech Stack
 
 - **Backend**: Java 21, Spring Boot 3.2, Maven, H2 (in-memory), JWT
