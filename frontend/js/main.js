@@ -83,7 +83,7 @@ function renderCoffeeCard(c) {
     const starsHtml = isFav ? `
         <div class="card-stars" data-coffee-id="${escapeHtml(c.id)}">
             ${[1,2,3,4,5].map(i =>
-                `<span class="card-star ${i <= rating ? 'filled' : ''}" data-rating="${i}" data-coffee-id="${escapeHtml(c.id)}">★</span>`
+                `<span class="card-star ${i <= rating ? 'filled' : ''}" data-rating="${i}" data-coffee-id="${escapeHtml(c.id)}">${beanSvg(i <= rating)}</span>`
             ).join("")}
         </div>` : "";
 
@@ -125,7 +125,9 @@ listEl.addEventListener("click", async (e) => {
             const container = document.querySelector(`.card-stars[data-coffee-id="${coffeeId}"]`);
             if (container) {
                 container.querySelectorAll(".card-star").forEach(s => {
-                    s.classList.toggle("filled", parseInt(s.dataset.rating) <= newRating);
+                    const isFilled = parseInt(s.dataset.rating) <= newRating;
+                    s.classList.toggle("filled", isFilled);
+                    s.innerHTML = beanSvg(isFilled);
                 });
             }
         } catch (err) {
@@ -193,7 +195,7 @@ async function addFavorite(coffee, btn) {
         starsDiv.className = "card-stars";
         starsDiv.dataset.coffeeId = coffee.id;
         starsDiv.innerHTML = [1,2,3,4,5].map(i =>
-            `<span class="card-star" data-rating="${i}" data-coffee-id="${escapeHtml(coffee.id)}">★</span>`
+            `<span class="card-star" data-rating="${i}" data-coffee-id="${escapeHtml(coffee.id)}">${beanSvg(false)}</span>`
         ).join("");
         card.querySelector(".coffee-actions").before(starsDiv);
     } catch (err) {
@@ -330,6 +332,19 @@ function openCompareModal() {
     document.getElementById("modalBackdrop").addEventListener("click", (e) => {
         if (e.target.id === "modalBackdrop") modalContainer.innerHTML = "";
     });
+}
+
+function beanSvg(filled) {
+    if (filled) {
+        return `<svg class="bean-svg" width="14" height="18" viewBox="0 0 14 18" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="7" cy="9" rx="6" ry="8.5" fill="#8B5E3C"/>
+            <path d="M7 1.5 Q11 5 11 9 Q11 13 7 16.5" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>`;
+    }
+    return `<svg class="bean-svg" width="14" height="18" viewBox="0 0 14 18" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="7" cy="9" rx="6" ry="8.5" fill="none" stroke="#c4a882" stroke-width="1.4"/>
+        <path d="M7 1.5 Q11 5 11 9 Q11 13 7 16.5" fill="none" stroke="#c4a882" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`;
 }
 
 function renderBrewContent(brew) {

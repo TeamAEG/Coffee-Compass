@@ -478,24 +478,24 @@ button[data-action="unfav"]:hover::after {
     gap: 0.15rem;
 }
 
-/* Card star rating */
+/* Card bean rating */
 .card-stars {
     display: flex;
-    gap: 0.1rem;
+    gap: 0.35rem;
     padding: 0.4rem 0 0.1rem;
+    align-items: center;
 }
 .card-star {
     cursor: pointer;
-    color: var(--coffee-cream);
-    font-size: 1.1rem;
-    transition: color 0.15s ease, transform 0.1s ease;
-}
-.card-star:hover,
-.card-star.filled {
-    color: #d4a017;
+    display: inline-flex;
+    transition: transform 0.12s ease;
 }
 .card-star:hover {
-    transform: scale(1.2);
+    transform: scale(1.25);
+}
+.bean-svg {
+    display: block;
+    pointer-events: none;
 }
 
 /* Compare button on card */
