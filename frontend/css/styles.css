@@ -484,6 +484,7 @@ button[data-action="unfav"]:hover::after {
     gap: 0.35rem;
     padding: 0.4rem 0 0.1rem;
     align-items: center;
+    margin-top: auto;
 }
 .card-star {
     cursor: pointer;
