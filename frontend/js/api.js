@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8080/api";
+const API_BASE = "https://coffee-compass.trebi2.net/api";
 const TOKEN_KEY = "cc_token";
 const USER_KEY = "cc_username";
 const EXPIRES_KEY = "cc_expires";
