@@ -125,6 +125,7 @@ label {
     display: flex;
     align-items: center;
     gap: 0.7rem;
+    border-bottom: none;
     font-family: var(--font-display);
     font-size: 1.4rem;
     font-weight: 600;
@@ -222,11 +223,31 @@ label {
     flex-direction: column;
     gap: 0.7rem;
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    cursor: pointer;
 }
 .coffee-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
     border-color: var(--coffee-cream);
+}
+@keyframes detail-float {
+    0%, 100% {
+        transform: translateY(0);
+        box-shadow: none;
+        background: #f5ead7;
+    }
+    50% {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 12px rgba(111, 74, 46, 0.22);
+        background: #e8cfaa;
+    }
+}
+.coffee-card:hover .detail-btn {
+    color: var(--coffee-bean);
+    animation: detail-float 1.2s ease-in-out infinite;
+}
+.detail-btn:hover {
+    border-color: #7b5334;
 }
 
 .coffee-card-head {
@@ -415,10 +436,12 @@ button[data-action="unfav"]:hover {
     border-color: #c0392b;
     color: #fff;
     font-size: 0;
+    white-space: nowrap;
 }
 button[data-action="unfav"]:hover::after {
     content: "✕ Entfernen";
-    font-size: 0.95rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
 }
 .brew-footer {
     display: flex;
@@ -496,6 +519,15 @@ button[data-action="unfav"]:hover::after {
 .card-star:hover {
     transform: scale(1.25);
 }
+@keyframes bean-pop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.5); }
+    70%  { transform: scale(0.88); }
+    100% { transform: scale(1); }
+}
+.card-star.bean-popping {
+    animation: bean-pop 0.35s ease-out forwards;
+}
 .bean-svg {
     display: block;
     pointer-events: none;
@@ -516,7 +548,7 @@ button[data-action="unfav"]:hover::after {
 .compare-btn:hover {
     background: var(--coffee-foam);
     color: var(--coffee-bean);
-    border-color: var(--coffee-medium);
+    border-color: #7b5334;
 }
 .compare-btn.active {
     background: var(--coffee-medium);
@@ -634,6 +666,31 @@ button[data-action="unfav"]:hover::after {
     white-space: nowrap;
     width: 110px;
 }
+.detail-grid {
+    display: flex;
+    flex-direction: column;
+}
+.detail-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--coffee-border);
+    font-size: 0.9rem;
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-label {
+    font-weight: 600;
+    color: var(--coffee-muted);
+    font-size: 0.8rem;
+    align-self: center;
+}
+.detail-brew-title {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    color: var(--coffee-bean);
+    margin: 1.5rem 0 0.75rem;
+}
+
 .star {
     cursor: pointer;
     color: var(--coffee-cream);

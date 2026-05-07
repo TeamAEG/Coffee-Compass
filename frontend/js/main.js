@@ -90,7 +90,7 @@ function renderCoffeeCard(c) {
         </div>` : "";
 
     return `
-        <article class="coffee-card expandable ${isFav ? 'is-favorite' : ''} ${isCompared ? 'is-compared' : ''}" data-id="${escapeHtml(c.id)}">
+        <article class="coffee-card ${isFav ? 'is-favorite' : ''} ${isCompared ? 'is-compared' : ''}" data-id="${escapeHtml(c.id)}">
             <div class="coffee-card-head">
                 <div>
                     <div class="coffee-name">${escapeHtml(c.name)}</div>
@@ -104,12 +104,11 @@ function renderCoffeeCard(c) {
             ${starsHtml}
             <div class="coffee-actions">
                 <button class="compare-btn ${isCompared ? 'active' : ''}" data-action="compare" data-id="${escapeHtml(c.id)}" title="Zum Vergleich hinzufügen">⇄</button>
+                <button class="secondary detail-btn" data-action="detail" data-id="${escapeHtml(c.id)}">Details</button>
                 <button data-action="${isFav ? 'unfav' : 'fav'}" data-id="${escapeHtml(c.id)}">
                     ${isFav ? '★ Favorit' : '☆ Speichern'}
                 </button>
             </div>
-            <div class="brew-expand" id="brew-${escapeHtml(c.id)}"><div class="brew-expand-inner"></div></div>
-            <div class="brew-footer">☕ Klicke für Brew-Infos</div>
         </article>`;
 }
 
@@ -130,6 +129,7 @@ listEl.addEventListener("click", async (e) => {
                     s.classList.toggle("filled", isFilled);
                     s.innerHTML = beanSvg(isFilled);
                 });
+                popBeans(container, newRating);
             }
         } catch (err) {
             alert("Bewertung fehlgeschlagen: " + err.message);
@@ -146,6 +146,8 @@ listEl.addEventListener("click", async (e) => {
         if (!coffee) return;
         if (action === "compare") {
             toggleCompare(id, btn);
+        } else if (action === "detail") {
+            openDetailModal(id);
         } else if (action === "fav" || action === "unfav") {
             if (!Auth.isLoggedIn()) { window.location.href = "login.html"; return; }
             if (action === "fav") await addFavorite(coffee, btn);
@@ -154,26 +156,32 @@ listEl.addEventListener("click", async (e) => {
         return;
     }
 
-    const card = e.target.closest(".coffee-card.expandable");
+    const card = e.target.closest(".coffee-card");
     if (!card) return;
-    const id = card.dataset.id;
-    const brewEl = document.getElementById(`brew-${id}`);
-    if (!brewEl) return;
+    openDetailModal(card.dataset.id);
+});
 
-    const isOpen = brewEl.classList.contains("open");
-    if (isOpen) { brewEl.classList.remove("open"); return; }
+listEl.addEventListener("mouseover", (e) => {
+    const star = e.target.closest(".card-star");
+    if (!star) return;
+    const container = star.closest(".card-stars");
+    if (!container) return;
+    const hoverRating = parseInt(star.dataset.rating, 10);
+    container.querySelectorAll(".card-star").forEach(s => {
+        s.innerHTML = beanSvg(parseInt(s.dataset.rating, 10) <= hoverRating);
+    });
+});
 
-    brewEl.classList.add("open");
-    const inner = brewEl.querySelector(".brew-expand-inner");
-    if (inner.dataset.loaded) return;
-    inner.dataset.loaded = "true";
-    inner.innerHTML = `<div class="loading-overlay" style="position:relative;height:60px;"><div class="spinner"></div></div>`;
-    try {
-        const brew = await API.getBrew(id);
-        inner.innerHTML = renderBrewContent(brew);
-    } catch (err) {
-        inner.innerHTML = `<div class="alert alert-error">Fehler: ${escapeHtml(err.message)}</div>`;
-    }
+listEl.addEventListener("mouseout", (e) => {
+    const container = e.target.closest(".card-stars");
+    if (!container || container.contains(e.relatedTarget)) return;
+    const coffeeId = container.dataset.coffeeId;
+    const rating = userRatings.get(coffeeId) || 0;
+    container.querySelectorAll(".card-star").forEach(s => {
+        const filled = parseInt(s.dataset.rating, 10) <= rating;
+        s.classList.toggle("filled", filled);
+        s.innerHTML = beanSvg(filled);
+    });
 });
 
 async function addFavorite(coffee, btn) {
@@ -324,16 +332,78 @@ function openCompareModal() {
     });
 }
 
+async function openDetailModal(coffeeId) {
+    modalContainer.innerHTML = `
+        <div class="modal-backdrop" id="modalBackdrop">
+            <div class="modal">
+                <div class="modal-head">
+                    <h2>Details</h2>
+                    <button class="close-btn" id="closeModal" aria-label="Schließen">×</button>
+                </div>
+                <div id="detailContent">
+                    <div class="loading-overlay" style="position:relative;height:80px;"><div class="spinner"></div></div>
+                </div>
+            </div>
+        </div>`;
+
+    const close = () => { modalContainer.innerHTML = ""; };
+    document.getElementById("closeModal").onclick = close;
+    document.getElementById("modalBackdrop").addEventListener("click", e => {
+        if (e.target.id === "modalBackdrop") close();
+    });
+
+    try {
+        const [coffee, brew] = await Promise.all([API.getCoffee(coffeeId), API.getBrew(coffeeId)]);
+        document.querySelector("#modalBackdrop .modal-head h2").textContent = coffee.name;
+        const fields = [
+            { label: "Rösterei",      val: coffee.roaster || "—" },
+            { label: "Herkunft",      val: coffee.origin || "—" },
+            { label: "Typ",           val: coffee.type || "—" },
+            { label: "Prozess",       val: coffee.process || "—" },
+            { label: "Röstung",       val: coffee.roastLevel || "—" },
+            { label: "Preis",         val: coffee.price ? `€${coffee.price.toFixed(2)}` : "—" },
+            { label: "Tasting Notes", val: (coffee.tastingNotes || []).join(", ") || "—" },
+        ];
+        document.getElementById("detailContent").innerHTML = `
+            <div class="detail-grid">
+                ${fields.map(f => `
+                    <div class="detail-row">
+                        <span class="detail-label">${f.label}</span>
+                        <span>${escapeHtml(String(f.val))}</span>
+                    </div>`).join("")}
+            </div>
+            <h3 class="detail-brew-title">☕ Brew-Empfehlungen</h3>
+            ${renderBrewContent(brew)}`;
+    } catch (err) {
+        document.getElementById("detailContent").innerHTML =
+            `<div class="alert alert-error">Fehler: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+function popBeans(container, rating) {
+    container.querySelectorAll(".card-star").forEach(s => {
+        if (parseInt(s.dataset.rating, 10) > rating) return;
+        s.classList.remove("bean-popping");
+        void s.offsetWidth; // force reflow so re-clicking the same rating re-triggers
+        s.style.animationDelay = `${(parseInt(s.dataset.rating, 10) - 1) * 45}ms`;
+        s.classList.add("bean-popping");
+        s.addEventListener("animationend", () => {
+            s.classList.remove("bean-popping");
+            s.style.animationDelay = "";
+        }, { once: true });
+    });
+}
+
 function beanSvg(filled) {
     if (filled) {
         return `<svg class="bean-svg" width="14" height="18" viewBox="0 0 14 18" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="7" cy="9" rx="6" ry="8.5" fill="#8B5E3C"/>
-            <path d="M7 1.5 Q11 5 11 9 Q11 13 7 16.5" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+            <ellipse cx="7" cy="9" rx="6" ry="7.5" fill="#8B5E3C"/>
+            <path d="M7 1.8 Q7.8 5 7 9 Q6.2 13 7 16.2" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
         </svg>`;
     }
     return `<svg class="bean-svg" width="14" height="18" viewBox="0 0 14 18" xmlns="http://www.w3.org/2000/svg">
-        <ellipse cx="7" cy="9" rx="6" ry="8.5" fill="none" stroke="#c4a882" stroke-width="1.4"/>
-        <path d="M7 1.5 Q11 5 11 9 Q11 13 7 16.5" fill="none" stroke="#c4a882" stroke-width="1.1" stroke-linecap="round"/>
+        <ellipse cx="7" cy="9" rx="6" ry="7.5" fill="none" stroke="#c4a882" stroke-width="1.4"/>
+        <path d="M7 1.8 Q7.8 5 7 9 Q6.2 13 7 16.2" fill="none" stroke="#c4a882" stroke-width="1.1" stroke-linecap="round"/>
     </svg>`;
 }
 

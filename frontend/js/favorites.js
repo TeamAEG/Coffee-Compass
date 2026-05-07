@@ -42,7 +42,7 @@ function renderCard(f) {
     const roastClass = f.roastLevel ? `roast-${f.roastLevel.toLowerCase()}` : "roast-medium";
     const stars = renderStars(f.rating || 0, f.id, false);
     return `
-        <article class="coffee-card expandable" data-id="${f.id}">
+        <article class="coffee-card" data-id="${f.id}">
             <div class="coffee-card-head">
                 <div>
                     <div class="coffee-name">${escapeHtml(f.coffeeName)}</div>
@@ -50,14 +50,13 @@ function renderCard(f) {
                 </div>
                 <span class="roast-badge ${roastClass}">${escapeHtml(f.roastLevel || "—")}</span>
             </div>
-            <div class="rating" data-fav-id="${f.id}">${stars}</div>
+            <div class="card-stars" data-fav-id="${f.id}">${stars}</div>
             ${f.notes ? `<div style="font-style: italic; color: var(--coffee-muted); font-size: 0.9rem; padding: 0.5rem 0;">"${escapeHtml(f.notes)}"</div>` : ""}
             <div class="coffee-actions">
-                <button class="secondary" data-action="edit" data-id="${f.id}">Bearbeiten</button>
+                <button class="secondary" data-action="edit" data-id="${f.id}">Notizen</button>
+                <button class="secondary detail-btn" data-action="detail" data-id="${f.id}" data-coffee-id="${escapeHtml(String(f.coffeeId))}">Details</button>
                 <button class="danger" data-action="delete" data-id="${f.id}">Entfernen</button>
             </div>
-            <div class="brew-expand" id="brew-${f.id}"><div class="brew-expand-inner"></div></div>
-            <div class="brew-footer">☕ Klicke für Brew-Infos</div>
         </article>`;
 }
 
@@ -76,16 +75,43 @@ function renderBrewContent(brew) {
     return html || `<p>Keine Brew-Empfehlungen verfügbar.</p>`;
 }
 
-function renderStars(rating, favId, interactive) {
+function popBeans(container, rating) {
+    container.querySelectorAll(".card-star").forEach(s => {
+        if (parseInt(s.dataset.rating, 10) > rating) return;
+        s.classList.remove("bean-popping");
+        void s.offsetWidth;
+        s.style.animationDelay = `${(parseInt(s.dataset.rating, 10) - 1) * 45}ms`;
+        s.classList.add("bean-popping");
+        s.addEventListener("animationend", () => {
+            s.classList.remove("bean-popping");
+            s.style.animationDelay = "";
+        }, { once: true });
+    });
+}
+
+function beanSvg(filled) {
+    if (filled) {
+        return `<svg class="bean-svg" width="14" height="18" viewBox="0 0 14 18" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="7" cy="9" rx="6" ry="7.5" fill="#8B5E3C"/>
+            <path d="M7 1.8 Q7.8 5 7 9 Q6.2 13 7 16.2" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>`;
+    }
+    return `<svg class="bean-svg" width="14" height="18" viewBox="0 0 14 18" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="7" cy="9" rx="6" ry="7.5" fill="none" stroke="#c4a882" stroke-width="1.4"/>
+        <path d="M7 1.8 Q7.8 5 7 9 Q6.2 13 7 16.2" fill="none" stroke="#c4a882" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`;
+}
+
+function renderStars(rating, favId) {
     let html = "";
     for (let i = 1; i <= 5; i++) {
-        html += `<span class="star ${i <= rating ? 'filled' : ''}" data-rating="${i}" data-fav-id="${favId}">★</span>`;
+        html += `<span class="card-star ${i <= rating ? 'filled' : ''}" data-rating="${i}" data-fav-id="${favId}">${beanSvg(i <= rating)}</span>`;
     }
     return html;
 }
 
 listEl.addEventListener("click", async (e) => {
-    const star = e.target.closest(".star");
+    const star = e.target.closest(".card-star");
     if (star) {
         const favId = star.dataset.favId;
         const newRating = parseInt(star.dataset.rating, 10);
@@ -96,35 +122,46 @@ listEl.addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-action]");
     if (btn) {
         const id = btn.dataset.id;
+        const action = btn.dataset.action;
+        if (action === "detail") {
+            openDetailModal(btn.dataset.coffeeId);
+            return;
+        }
         const fav = favorites.find(f => String(f.id) === String(id));
         if (!fav) return;
-        if (btn.dataset.action === "edit") openEditModal(fav);
-        else if (btn.dataset.action === "delete") deleteFavorite(fav);
+        if (action === "edit") openEditModal(fav);
+        else if (action === "delete") deleteFavorite(fav);
         return;
     }
 
-    const card = e.target.closest(".coffee-card.expandable");
+    const card = e.target.closest(".coffee-card");
     if (!card) return;
-    const id = card.dataset.id;
-    const fav = favorites.find(f => String(f.id) === String(id));
-    if (!fav) return;
+    const fav = favorites.find(f => String(f.id) === String(card.dataset.id));
+    if (fav) openDetailModal(fav.coffeeId);
+});
 
-    const brewEl = document.getElementById(`brew-${id}`);
-    if (!brewEl) return;
-    const isOpen = brewEl.classList.contains("open");
-    if (isOpen) { brewEl.classList.remove("open"); return; }
+listEl.addEventListener("mouseover", (e) => {
+    const star = e.target.closest(".card-star");
+    if (!star) return;
+    const container = star.closest(".card-stars");
+    if (!container) return;
+    const hoverRating = parseInt(star.dataset.rating, 10);
+    container.querySelectorAll(".card-star").forEach(s => {
+        s.innerHTML = beanSvg(parseInt(s.dataset.rating, 10) <= hoverRating);
+    });
+});
 
-    brewEl.classList.add("open");
-    const inner = brewEl.querySelector(".brew-expand-inner");
-    if (inner.dataset.loaded) return;
-    inner.dataset.loaded = "true";
-    inner.innerHTML = `<div class="loading-overlay" style="position:relative;height:60px;"><div class="spinner"></div></div>`;
-    try {
-        const brew = await API.getBrew(fav.coffeeId);
-        inner.innerHTML = renderBrewContent(brew);
-    } catch (err) {
-        inner.innerHTML = `<div class="alert alert-error">Fehler: ${escapeHtml(err.message)}</div>`;
-    }
+listEl.addEventListener("mouseout", (e) => {
+    const container = e.target.closest(".card-stars");
+    if (!container || container.contains(e.relatedTarget)) return;
+    const favId = container.dataset.favId;
+    const fav = favorites.find(f => String(f.id) === String(favId));
+    const rating = fav ? (fav.rating || 0) : 0;
+    container.querySelectorAll(".card-star").forEach(s => {
+        const filled = parseInt(s.dataset.rating, 10) <= rating;
+        s.classList.toggle("filled", filled);
+        s.innerHTML = beanSvg(filled);
+    });
 });
 
 async function updateRating(favId, rating) {
@@ -133,6 +170,8 @@ async function updateRating(favId, rating) {
         const idx = favorites.findIndex(f => String(f.id) === String(favId));
         if (idx >= 0) favorites[idx] = updated;
         render();
+        const container = document.querySelector(`.card-stars[data-fav-id="${favId}"]`);
+        if (container) popBeans(container, rating);
     } catch (err) {
         alert("Bewertung fehlgeschlagen: " + err.message);
     }
@@ -144,7 +183,7 @@ function openEditModal(fav) {
             <div class="modal">
                 <div class="modal-head">
                     <div>
-                        <h2>Favorit bearbeiten</h2>
+                        <h2>Notizen</h2>
                         <p style="color: var(--coffee-muted); font-size: 0.9rem;">${escapeHtml(fav.coffeeName)}</p>
                     </div>
                     <button class="close-btn" id="closeModal" aria-label="Schließen">×</button>
@@ -156,7 +195,7 @@ function openEditModal(fav) {
                     </div>
                     <div class="form-group">
                         <label>Bewertung</label>
-                        <div class="rating" id="editStars">${renderStars(fav.rating || 0, fav.id)}</div>
+                        <div class="card-stars" id="editStars">${renderStars(fav.rating || 0, fav.id)}</div>
                     </div>
                     <div class="form-actions">
                         <button type="submit">Speichern</button>
@@ -168,11 +207,30 @@ function openEditModal(fav) {
 
     let currentRating = fav.rating || 0;
 
-    document.getElementById("editStars").addEventListener("click", (e) => {
-        const star = e.target.closest(".star");
+    const editStarsEl = document.getElementById("editStars");
+
+    editStarsEl.addEventListener("click", (e) => {
+        const star = e.target.closest(".card-star");
         if (!star) return;
         currentRating = parseInt(star.dataset.rating, 10);
-        document.getElementById("editStars").innerHTML = renderStars(currentRating, fav.id);
+        editStarsEl.innerHTML = renderStars(currentRating, fav.id);
+        popBeans(editStarsEl, currentRating);
+    });
+
+    editStarsEl.addEventListener("mouseover", (e) => {
+        const star = e.target.closest(".card-star");
+        if (!star) return;
+        const hoverRating = parseInt(star.dataset.rating, 10);
+        editStarsEl.querySelectorAll(".card-star").forEach(s => {
+            s.innerHTML = beanSvg(parseInt(s.dataset.rating, 10) <= hoverRating);
+        });
+    });
+
+    editStarsEl.addEventListener("mouseout", (e) => {
+        if (editStarsEl.contains(e.relatedTarget)) return;
+        editStarsEl.querySelectorAll(".card-star").forEach(s => {
+            s.innerHTML = beanSvg(parseInt(s.dataset.rating, 10) <= currentRating);
+        });
     });
 
     document.getElementById("closeModal").onclick = closeModal;
@@ -211,6 +269,54 @@ async function deleteFavorite(fav) {
         render();
     } catch (err) {
         alert("Fehler: " + err.message);
+    }
+}
+
+async function openDetailModal(coffeeId) {
+    modalContainer.innerHTML = `
+        <div class="modal-backdrop" id="modalBackdrop">
+            <div class="modal">
+                <div class="modal-head">
+                    <h2>Details</h2>
+                    <button class="close-btn" id="closeModal" aria-label="Schließen">×</button>
+                </div>
+                <div id="detailContent">
+                    <div class="loading-overlay" style="position:relative;height:80px;"><div class="spinner"></div></div>
+                </div>
+            </div>
+        </div>`;
+
+    const close = () => { modalContainer.innerHTML = ""; };
+    document.getElementById("closeModal").onclick = close;
+    document.getElementById("modalBackdrop").addEventListener("click", e => {
+        if (e.target.id === "modalBackdrop") close();
+    });
+
+    try {
+        const [coffee, brew] = await Promise.all([API.getCoffee(coffeeId), API.getBrew(coffeeId)]);
+        document.querySelector("#modalBackdrop .modal-head h2").textContent = coffee.name;
+        const fields = [
+            { label: "Rösterei",      val: coffee.roaster || "—" },
+            { label: "Herkunft",      val: coffee.origin || "—" },
+            { label: "Typ",           val: coffee.type || "—" },
+            { label: "Prozess",       val: coffee.process || "—" },
+            { label: "Röstung",       val: coffee.roastLevel || "—" },
+            { label: "Preis",         val: coffee.price ? `€${coffee.price.toFixed(2)}` : "—" },
+            { label: "Tasting Notes", val: (coffee.tastingNotes || []).join(", ") || "—" },
+        ];
+        document.getElementById("detailContent").innerHTML = `
+            <div class="detail-grid">
+                ${fields.map(f => `
+                    <div class="detail-row">
+                        <span class="detail-label">${f.label}</span>
+                        <span>${escapeHtml(String(f.val))}</span>
+                    </div>`).join("")}
+            </div>
+            <h3 class="detail-brew-title">☕ Brew-Empfehlungen</h3>
+            ${renderBrewContent(brew)}`;
+    } catch (err) {
+        document.getElementById("detailContent").innerHTML =
+            `<div class="alert alert-error">Fehler: ${escapeHtml(err.message)}</div>`;
     }
 }
 

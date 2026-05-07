@@ -142,7 +142,7 @@ function renderMatchCard(m, maxScore) {
         .map(n => `<span class="tasting-note">${escapeHtml(n)}</span>`).join("");
 
     return `
-        <article class="coffee-card">
+        <article class="coffee-card" data-id="${escapeHtml(c.id)}">
             <div class="coffee-card-head">
                 <div>
                     <div class="coffee-name">${escapeHtml(c.name)}</div>
@@ -154,38 +154,115 @@ function renderMatchCard(m, maxScore) {
             <div style="font-size: 0.9rem; color: var(--coffee-muted);">${escapeHtml(c.origin || "")}</div>
             <div class="tasting-notes">${notes}</div>
             <div class="coffee-actions">
+                <button class="secondary detail-btn" data-action="detail" data-id="${escapeHtml(c.id)}">Details</button>
                 <button data-action="save" data-id="${escapeHtml(c.id)}">★ Zu Favoriten</button>
             </div>
         </article>`;
 }
 
-async function handleResultClick(e) {
-    const btn = e.target.closest("button[data-action='save']");
-    if (!btn) return;
-    const coffeeId = btn.dataset.id;
-    const card = btn.closest(".coffee-card");
-    const name = card.querySelector(".coffee-name").textContent;
-    const roaster = card.querySelector(".coffee-roaster").textContent;
-    const roastLevel = card.querySelector(".roast-badge").textContent;
+function renderBrewContent(brew) {
+    const html = (brew.methods || []).map(m => `
+        <div class="brew-method">
+            <h4>${escapeHtml(m.name)}</h4>
+            <div style="font-size: 0.85rem; color: var(--coffee-muted);">${escapeHtml(m.setup)}</div>
+            <div class="brew-stats">
+                <span><strong>Wasser</strong> ${m.waterTempC}°C</span>
+                <span><strong>Verhältnis</strong> ${escapeHtml(m.ratio)}</span>
+                <span><strong>Zeit</strong> ${escapeHtml(m.time)}</span>
+            </div>
+            <div style="font-size: 0.9rem;">${escapeHtml(m.description)}</div>
+        </div>`).join("");
+    return html || `<p>Keine Brew-Empfehlungen verfügbar.</p>`;
+}
 
-    if (!Auth.isLoggedIn()) {
-        window.location.href = "login.html";
+async function openDetailModal(coffeeId) {
+    modalContainer.innerHTML = `
+        <div class="modal-backdrop" id="modalBackdrop">
+            <div class="modal">
+                <div class="modal-head">
+                    <h2>Details</h2>
+                    <button class="close-btn" id="closeModal" aria-label="Schließen">×</button>
+                </div>
+                <div id="detailContent">
+                    <div class="loading-overlay" style="position:relative;height:80px;"><div class="spinner"></div></div>
+                </div>
+            </div>
+        </div>`;
+
+    const close = () => { modalContainer.innerHTML = ""; };
+    document.getElementById("closeModal").onclick = close;
+    document.getElementById("modalBackdrop").addEventListener("click", e => {
+        if (e.target.id === "modalBackdrop") close();
+    });
+
+    try {
+        const [coffee, brew] = await Promise.all([API.getCoffee(coffeeId), API.getBrew(coffeeId)]);
+        document.querySelector("#modalBackdrop .modal-head h2").textContent = coffee.name;
+        const fields = [
+            { label: "Rösterei",      val: coffee.roaster || "—" },
+            { label: "Herkunft",      val: coffee.origin || "—" },
+            { label: "Typ",           val: coffee.type || "—" },
+            { label: "Prozess",       val: coffee.process || "—" },
+            { label: "Röstung",       val: coffee.roastLevel || "—" },
+            { label: "Preis",         val: coffee.price ? `€${coffee.price.toFixed(2)}` : "—" },
+            { label: "Tasting Notes", val: (coffee.tastingNotes || []).join(", ") || "—" },
+        ];
+        document.getElementById("detailContent").innerHTML = `
+            <div class="detail-grid">
+                ${fields.map(f => `
+                    <div class="detail-row">
+                        <span class="detail-label">${f.label}</span>
+                        <span>${escapeHtml(String(f.val))}</span>
+                    </div>`).join("")}
+            </div>
+            <h3 class="detail-brew-title">☕ Brew-Empfehlungen</h3>
+            ${renderBrewContent(brew)}`;
+    } catch (err) {
+        document.getElementById("detailContent").innerHTML =
+            `<div class="alert alert-error">Fehler: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+async function handleResultClick(e) {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) {
+        const card = e.target.closest(".coffee-card");
+        if (card) openDetailModal(card.dataset.id);
         return;
     }
-    btn.disabled = true;
-    try {
-        await API.addFavorite({
-            coffeeId, coffeeName: name, roaster,
-            roastLevel: roastLevel === "—" ? null : roastLevel,
-            notes: "", rating: 0
-        });
-        btn.textContent = "✓ Gespeichert";
-    } catch (err) {
-        if (err.message.includes("already")) {
-            btn.textContent = "★ Bereits Favorit";
-        } else {
-            btn.textContent = "Fehler";
-            btn.disabled = false;
+    const action = btn.dataset.action;
+    const coffeeId = btn.dataset.id;
+
+    if (action === "detail") {
+        openDetailModal(coffeeId);
+        return;
+    }
+
+    if (action === "save") {
+        const card = btn.closest(".coffee-card");
+        const name = card.querySelector(".coffee-name").textContent;
+        const roaster = card.querySelector(".coffee-roaster").textContent;
+        const roastLevel = card.querySelector(".roast-badge").textContent;
+
+        if (!Auth.isLoggedIn()) {
+            window.location.href = "login.html";
+            return;
+        }
+        btn.disabled = true;
+        try {
+            await API.addFavorite({
+                coffeeId, coffeeName: name, roaster,
+                roastLevel: roastLevel === "—" ? null : roastLevel,
+                notes: "", rating: 0
+            });
+            btn.textContent = "✓ Gespeichert";
+        } catch (err) {
+            if (err.message.includes("already")) {
+                btn.textContent = "★ Bereits Favorit";
+            } else {
+                btn.textContent = "Fehler";
+                btn.disabled = false;
+            }
         }
     }
 }
