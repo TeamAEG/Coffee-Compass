@@ -40,12 +40,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/coffees/**").permitAll()
                         .requestMatchers("/api/quiz/**").permitAll()
                         .requestMatchers("/api/match").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/favorites/**").authenticated()
                         .requestMatchers("/api/ratings/**").authenticated()
                         .anyRequest().permitAll()
                 )
-                .headers(h -> h.frameOptions(f -> f.disable()))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
