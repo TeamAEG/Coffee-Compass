@@ -101,6 +101,7 @@ public class CoffeeService {
                 added++;
             }
         }
+        log.info("fetchBeans [{}] → {} new entries", url, added);
         return added;
     }
 
