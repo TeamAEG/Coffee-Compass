@@ -42,10 +42,8 @@ public class CoffeeService {
 
     @PostConstruct
     public void init() {
-        if (!tryLoadExternalData()) {
-            log.warn("Falling back to seed data");
-            loadSeedData();
-        }
+        loadSeedData();
+        tryLoadExternalData();
         log.info("Coffee Compass loaded {} coffees in total", coffeeIndex.size());
     }
 
@@ -66,7 +64,7 @@ public class CoffeeService {
         }
     }
 
-    private boolean tryLoadExternalData() {
+    private void tryLoadExternalData() {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", loffeeApiKey);
@@ -77,10 +75,8 @@ public class CoffeeService {
             added += fetchBeans(loffeeBaseUrl + "/beans?limit=200&roaster=Kaffeelix", entity);
 
             log.info("Loaded {} coffees from Loffee Labs", added);
-            return added > 0;
         } catch (Exception e) {
-            log.warn("Loffee Labs API unavailable: {}", e.getMessage());
-            return false;
+            log.warn("Loffee Labs API unavailable, continuing with seed data only: {}", e.getMessage());
         }
     }
 
