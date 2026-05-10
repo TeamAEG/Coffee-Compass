@@ -79,7 +79,8 @@ function renderCoffeeCard(c) {
     const roastLabel = c.roastLevel ? c.roastLevel : "—";
     const notes = (c.tastingNotes || []).slice(0, 4)
         .map(n => `<span class="tasting-note">${escapeHtml(n)}</span>`).join("");
-    const meta = [c.origin, c.process, c.type].filter(Boolean)
+    const shortProcess = c.process && !c.process.includes(",") && c.process.length <= 25 ? c.process : null;
+    const meta = [c.origin, shortProcess].filter(Boolean)
         .map(m => `<span>${escapeHtml(m)}</span>`).join("");
 
     const starsHtml = Auth.isLoggedIn() ? `
