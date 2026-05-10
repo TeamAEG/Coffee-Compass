@@ -74,7 +74,7 @@ public class CoffeeService {
 
             int added = 0;
             added += fetchBeans(loffeeBaseUrl + "/beans?limit=200", entity);
-            added += fetchBeans(loffeeBaseUrl + "/beans?limit=200&origin=Austria", entity);
+            added += fetchBeans(loffeeBaseUrl + "/beans?limit=200&roaster=Kaffeelix", entity);
 
             log.info("Loaded {} coffees from Loffee Labs", added);
             return added > 0;
