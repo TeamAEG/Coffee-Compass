@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:fake-coffee-api.vercel.app)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:fake-coffee-brand-api.vercel.app)",
+      "WebFetch(domain:www.postman.com)",
+      "WebFetch(domain:beta.loffeelabs.com)"
+    ]
+  }
+}

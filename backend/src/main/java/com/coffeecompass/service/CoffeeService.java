@@ -7,6 +7,10 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -21,16 +25,19 @@ public class CoffeeService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
-    private final String externalBaseUrl;
+    private final String loffeeBaseUrl;
+    private final String loffeeApiKey;
 
     private final Map<String, CoffeeDto> coffeeIndex = new LinkedHashMap<>();
 
     public CoffeeService(RestTemplate restTemplate,
                          ObjectMapper objectMapper,
-                         @Value("${app.external.thirdwave-base-url}") String externalBaseUrl) {
+                         @Value("${app.external.loffee-base-url}") String loffeeBaseUrl,
+                         @Value("${app.external.loffee-api-key}") String loffeeApiKey) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
-        this.externalBaseUrl = externalBaseUrl;
+        this.loffeeBaseUrl = loffeeBaseUrl;
+        this.loffeeApiKey = loffeeApiKey;
     }
 
     @PostConstruct
@@ -59,43 +66,90 @@ public class CoffeeService {
 
     private void tryLoadExternalData() {
         try {
-            String url = externalBaseUrl + "/coffees";
-            String body = restTemplate.getForObject(url, String.class);
+            String url = loffeeBaseUrl + "/beans?limit=200";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", loffeeApiKey);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+            String body = response.getBody();
             if (body == null) return;
+
             JsonNode root = objectMapper.readTree(body);
-            JsonNode list = root.isArray() ? root : root.path("coffees");
+            JsonNode list = root.isArray() ? root : root.path("data");
+            if (list.isMissingNode()) list = root.path("beans");
+
             int added = 0;
             for (JsonNode node : list) {
-                CoffeeDto dto = mapExternal(node);
+                CoffeeDto dto = mapLoffee(node);
                 if (dto != null && !coffeeIndex.containsKey(dto.getId())) {
                     coffeeIndex.put(dto.getId(), dto);
                     added++;
                 }
             }
-            log.info("Loaded {} external coffees from {}", added, url);
+            log.info("Loaded {} coffees from Loffee Labs", added);
         } catch (Exception e) {
-            log.warn("External API unavailable, continuing with seed data only: {}", e.getMessage());
+            log.warn("Loffee Labs API unavailable, continuing with seed data only: {}", e.getMessage());
         }
     }
 
-    private CoffeeDto mapExternal(JsonNode node) {
+    private CoffeeDto mapLoffee(JsonNode node) {
         String id = node.path("id").asText(null);
-        String name = node.path("name").asText(null);
-        if (id == null || name == null) return null;
+        String name = node.path("roast-name").asText(null);
+        if (id == null || name == null || name.isBlank()) return null;
 
         CoffeeDto dto = new CoffeeDto();
-        dto.setId("ext-" + id);
+        dto.setId("loffee-" + id);
         dto.setName(name);
-        dto.setRoaster(node.path("roaster").asText(null));
-        dto.setOrigin(node.path("origin").asText(null));
-        dto.setType(node.path("type").asText(null));
+
+        JsonNode roasterNode = node.path("roaster");
+        if (roasterNode.isObject()) {
+            dto.setRoaster(roasterNode.path("name").asText(null));
+        } else {
+            dto.setRoaster(roasterNode.asText(null));
+        }
+
+        String origin = node.path("origin").asText(null);
+        String region = node.path("region").asText(null);
+        if (origin != null && region != null && !region.isBlank() && !region.equalsIgnoreCase(origin)) {
+            dto.setOrigin(region + ", " + origin);
+        } else {
+            dto.setOrigin(origin);
+        }
+
+        dto.setType(node.path("variety").asText(null));
         dto.setProcess(node.path("process").asText(null));
-        dto.setRoastLevel(node.path("roastLevel").asText(null));
         dto.setDescription(node.path("description").asText(null));
-        if (node.has("price")) dto.setPrice(node.path("price").asDouble());
+
+        String degree = node.path("degree").asText(null);
+        if (degree != null) {
+            String lower = degree.toLowerCase();
+            if (lower.contains("light"))       dto.setRoastLevel("light");
+            else if (lower.contains("dark"))   dto.setRoastLevel("dark");
+            else if (lower.contains("medium") || lower.contains("med")) dto.setRoastLevel("medium");
+            else                               dto.setRoastLevel(degree);
+        }
+
+        if (node.has("price-low") && !node.path("price-low").isNull()) {
+            dto.setPrice(node.path("price-low").asDouble());
+        }
+
         List<String> notes = new ArrayList<>();
-        node.path("tastingNotes").forEach(n -> notes.add(n.asText()));
+        JsonNode tastingTag = node.path("tasting-tag");
+        if (tastingTag.isArray()) {
+            tastingTag.forEach(n -> notes.add(n.asText()));
+        } else {
+            String tasting = node.path("tasting").asText(null);
+            if (tasting != null && !tasting.isBlank()) {
+                Arrays.stream(tasting.split(","))
+                      .map(String::trim)
+                      .filter(s -> !s.isEmpty())
+                      .forEach(notes::add);
+            }
+        }
         dto.setTastingNotes(notes);
+
         return dto;
     }
 
