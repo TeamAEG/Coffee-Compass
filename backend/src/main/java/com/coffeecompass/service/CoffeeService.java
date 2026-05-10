@@ -68,34 +68,40 @@ public class CoffeeService {
 
     private boolean tryLoadExternalData() {
         try {
-            String url = loffeeBaseUrl + "/beans?limit=200";
-
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", loffeeApiKey);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-            String body = response.getBody();
-            if (body == null) return false;
-
-            JsonNode root = objectMapper.readTree(body);
-            JsonNode list = root.isArray() ? root : root.path("data");
-            if (list.isMissingNode()) list = root.path("beans");
-
             int added = 0;
-            for (JsonNode node : list) {
-                CoffeeDto dto = mapLoffee(node);
-                if (dto != null && !coffeeIndex.containsKey(dto.getId())) {
-                    coffeeIndex.put(dto.getId(), dto);
-                    added++;
-                }
-            }
+            added += fetchBeans(loffeeBaseUrl + "/beans?limit=200", entity);
+            added += fetchBeans(loffeeBaseUrl + "/beans?limit=200&origin=Austria", entity);
+
             log.info("Loaded {} coffees from Loffee Labs", added);
             return added > 0;
         } catch (Exception e) {
             log.warn("Loffee Labs API unavailable: {}", e.getMessage());
             return false;
         }
+    }
+
+    private int fetchBeans(String url, HttpEntity<Void> entity) throws Exception {
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+        String body = response.getBody();
+        if (body == null) return 0;
+
+        JsonNode root = objectMapper.readTree(body);
+        JsonNode list = root.isArray() ? root : root.path("data");
+        if (list.isMissingNode()) list = root.path("beans");
+
+        int added = 0;
+        for (JsonNode node : list) {
+            CoffeeDto dto = mapLoffee(node);
+            if (dto != null && !coffeeIndex.containsKey(dto.getId())) {
+                coffeeIndex.put(dto.getId(), dto);
+                added++;
+            }
+        }
+        return added;
     }
 
     private CoffeeDto mapLoffee(JsonNode node) {
