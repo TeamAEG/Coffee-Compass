@@ -42,8 +42,10 @@ public class CoffeeService {
 
     @PostConstruct
     public void init() {
-        loadSeedData();
-        tryLoadExternalData();
+        if (!tryLoadExternalData()) {
+            log.warn("Falling back to seed data");
+            loadSeedData();
+        }
         log.info("Coffee Compass loaded {} coffees in total", coffeeIndex.size());
     }
 
@@ -64,7 +66,7 @@ public class CoffeeService {
         }
     }
 
-    private void tryLoadExternalData() {
+    private boolean tryLoadExternalData() {
         try {
             String url = loffeeBaseUrl + "/beans?limit=200";
 
@@ -74,7 +76,7 @@ public class CoffeeService {
 
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
             String body = response.getBody();
-            if (body == null) return;
+            if (body == null) return false;
 
             JsonNode root = objectMapper.readTree(body);
             JsonNode list = root.isArray() ? root : root.path("data");
@@ -89,8 +91,10 @@ public class CoffeeService {
                 }
             }
             log.info("Loaded {} coffees from Loffee Labs", added);
+            return added > 0;
         } catch (Exception e) {
-            log.warn("Loffee Labs API unavailable, continuing with seed data only: {}", e.getMessage());
+            log.warn("Loffee Labs API unavailable: {}", e.getMessage());
+            return false;
         }
     }
 
