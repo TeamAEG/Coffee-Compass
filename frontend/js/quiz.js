@@ -160,20 +160,6 @@ function renderMatchCard(m, maxScore) {
         </article>`;
 }
 
-function renderBrewContent(brew) {
-    const html = (brew.methods || []).map(m => `
-        <div class="brew-method">
-            <h4>${escapeHtml(m.name)}</h4>
-            <div style="font-size: 0.85rem; color: var(--coffee-muted);">${escapeHtml(m.setup)}</div>
-            <div class="brew-stats">
-                <span><strong>Wasser</strong> ${m.waterTempC}°C</span>
-                <span><strong>Verhältnis</strong> ${escapeHtml(m.ratio)}</span>
-                <span><strong>Zeit</strong> ${escapeHtml(m.time)}</span>
-            </div>
-            <div style="font-size: 0.9rem;">${escapeHtml(m.description)}</div>
-        </div>`).join("");
-    return html || `<p>Keine Brew-Empfehlungen verfügbar.</p>`;
-}
 
 async function openDetailModal(coffeeId) {
     modalContainer.innerHTML = `

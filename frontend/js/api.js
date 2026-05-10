@@ -110,10 +110,6 @@ const API = {
     setRating(coffeeId, rating) {
         return request("POST", "/ratings/" + encodeURIComponent(coffeeId), { rating });
     },
-    removeRating(coffeeId) {
-        return request("DELETE", "/ratings/" + encodeURIComponent(coffeeId));
-    },
-
     quizQuestions() {
         return request("GET", "/quiz/questions");
     },
@@ -136,6 +132,3 @@ function showError(container, message) {
     container.innerHTML = `<div class="alert alert-error">${escapeHtml(message)}</div>`;
 }
 
-function showSuccess(container, message) {
-    container.innerHTML = `<div class="alert alert-success">${escapeHtml(message)}</div>`;
-}
