@@ -6,9 +6,9 @@ https://coffee-compass.net/
 
 ## Tech Stack
 
-- **Backend**: Java 21, Spring Boot 3.2, Maven, H2 (in-memory), JWT
+- **Backend**: Java 21, Spring Boot 3.2, Maven, H2 (file-based), JWT
 - **Frontend**: HTML5, CSS, Vanilla JS (kein Framework)
-- **Externe API**: [Third Wave Coffee Base](https://thirdwavecoffeebase.com)
+- **Externe API**: [Loffee Labs Bean Base API](https://beta.loffeelabs.com/developers/documentation)
 
 ## Projektstruktur
 
@@ -30,9 +30,35 @@ coffee-compass/
     ├── favorites.html        Meine Favoriten
     ├── quiz.html             Find Your Perfect Coffee
     ├── css/styles.css
-    └── js/                   api.js, main.js, favorites.js, quiz.js
+    └── js/
+        ├── api.js            HTTP-Client, Auth, shared helpers
+        ├── utils.js          Shared UI utilities (beanSvg, popBeans, renderBrewContent)
+        ├── main.js           Discover-Seite
+        ├── favorites.js      Favoriten-Seite
+        └── quiz.js           Quiz-Seite
 ```
 
+## Externe API — Loffee Labs Bean Base
+
+Beim Start ruft das Backend `GET /beans?limit=200` mit einem API-Key im `Authorization`-Header auf. Die Antwort wird auf das interne `CoffeeDto` gemappt. Falls die API nicht erreichbar ist, fällt das System automatisch auf lokale Seed-Daten (`seed-coffees.json`) zurück.
+
+```
+GET https://beta.loffeelabs.com/api/v2/beans?limit=200
+Authorization: <API_KEY>
+```
+
+Relevante Felder aus der API-Antwort:
+
+| Loffee Labs Feld | CoffeeDto Feld |
+|---|---|
+| `roast-name` | `name` |
+| `roaster` | `roaster` |
+| `origin` + `region` | `origin` |
+| `degree` | `roastLevel` (normalisiert zu light/medium/dark) |
+| `tasting-tag` | `tastingNotes` |
+| `process` | `process` |
+| `variety` | `type` |
+| `price-low` | `price` |
 
 ## API-Übersicht
 
@@ -50,11 +76,21 @@ coffee-compass/
 | PUT     | /api/favorites/{id}           | ja   | Favorit komplett ersetzen               |
 | PATCH   | /api/favorites/{id}           | ja   | Favorit teilweise updaten (z.B. rating) |
 | DELETE  | /api/favorites/{id}           | ja   | Favorit löschen                         |
+| GET     | /api/ratings                  | ja   | Eigene Bewertungen abrufen              |
+| POST    | /api/ratings/{coffeeId}       | ja   | Kaffee bewerten (1–5)                   |
+| DELETE  | /api/ratings/{coffeeId}       | ja   | Bewertung entfernen                     |
 
 Auth-Header für geschützte Endpoints:
 ```
 Authorization: Bearer <JWT>
 ```
+
+## Umgebungsvariablen
+
+| Variable | Beschreibung |
+|---|---|
+| `JWT_SECRET` | Secret für JWT-Signierung (HMAC-SHA256) |
+| `LOFFEE_API_KEY` | API-Key für die Loffee Labs Bean Base API |
 
 ## Erfüllte Requirements
 
@@ -69,35 +105,33 @@ Authorization: Bearer <JWT>
 | M5 | JSON-Antworten                                 | Spring Boot liefert standardmäßig JSON, alle Endpoints     |
 | M6 | GET, POST, PUT, DELETE im BE                  | `FavoriteController` deckt alle 4 ab; auch in anderen Controllern |
 | M7 | GET, POST, PUT, DELETE im FE                  | `js/api.js` und `js/favorites.js` nutzen alle 4            |
-| M8 | Mind. ein externer REST-Service               | `CoffeeService` ruft Third Wave Coffee Base API auf        |
+| M8 | Mind. ein externer REST-Service               | `CoffeeService` ruft Loffee Labs Bean Base API auf         |
 | M9 | Session-Management                             | JWT mit Bearer-Token in `Authorization`-Header             |
 
 ### SHOULD (8 Punkte)
 
 | ID | Anforderung                                            | Wo erfüllt                                                |
 |----|--------------------------------------------------------|-----------------------------------------------------------|
+| S1 | Zweiter externer REST-Service                          | **Noch zu ergänzen**                                      |
 | S2 | Zweite FE-Komponente mit ≥3 BE-Endpoints              | `quiz.html` nutzt `/api/quiz/questions`, `/api/match`, `/api/favorites` (POST) |
 | S3 | W3C-Konformes HTML                                    | Valider HTML5 — testbar auf https://validator.w3.org      |
 | S4 | Responsive Design                                      | Media Queries in `styles.css` für Mobile (<768px) & Desktop |
-| S1 | Zweiter externer REST-Service                          | **Noch zu ergänzen** — siehe „Nächste Schritte"           |
 
 ### COULD (5 Punkte)
 
 | ID | Anforderung                          | Wo erfüllt                                            |
 |----|--------------------------------------|-------------------------------------------------------|
-| C3 | PATCH-Endpoint                       | `PATCH /api/favorites/{id}` in `FavoriteController`   |
 | C1 | Dritter externer REST-Service        | **Noch zu ergänzen**                                  |
 | C2 | JSON & XML Antworten                 | **Noch zu ergänzen**                                  |
+| C3 | PATCH-Endpoint                       | `PATCH /api/favorites/{id}` in `FavoriteController`   |
 
 ## Nächste Schritte
 
 - [ ] Zweiten und dritten externen REST-Service einbinden (S1, C1)
 - [ ] XML-Output ergänzen (`produces = {APPLICATION_JSON, APPLICATION_XML}`)
 - [ ] Tests in `backend/src/test/java`
-- [ ] Production-Build des Frontends
-- [ ] JWT-Secret in Umgebungsvariable auslagern
 
-## Wie wir die wichtigsten Konzepte erklären können
+## Konzepte erklärt
 
 **JWT (JSON Web Token):** Ein signierter Token, der nach erfolgreichem Login an
 das Frontend zurückgegeben wird. Der Token enthält die UserID und einen
