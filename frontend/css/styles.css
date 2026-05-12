@@ -460,6 +460,7 @@ button[data-action="unfav"]:hover::after {
 .coffee-card.expandable:hover .brew-footer {
     opacity: 1;
 }
+/* TODO: brew-expand, brew-expand-inner, brew-footer, .coffee-card.expandable — toter Code, kein JS/HTML verwendet diese Klassen mehr */
 .brew-expand {
     max-height: 0;
     overflow: hidden;
