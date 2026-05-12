@@ -28,6 +28,9 @@
     padding: 0;
 }
 
+/* Ensure the HTML hidden attribute is never overridden by display rules on other classes */
+[hidden] { display: none !important; }
+
 html, body {
     font-family: var(--font-body);
     color: var(--coffee-text);
@@ -197,15 +200,313 @@ label {
 }
 
 .filter-bar {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr auto;
-    gap: 0.8rem;
-    align-items: end;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
     margin-bottom: 1.5rem;
     background: var(--coffee-paper);
     padding: 1.2rem;
     border: 1px solid var(--coffee-border);
     border-radius: var(--radius-lg);
+}
+
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    align-items: flex-end;
+}
+
+/* Named field — a single labelled dropdown */
+.filter-field {
+    flex: 1 1 150px;
+    min-width: 0;
+}
+
+.filter-search-wrap {
+    flex: 2 1 220px;
+    min-width: 0;
+    position: relative;
+}
+
+.filter-reset-wrap {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+
+.filter-secondary-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.filter-price-wrap {
+    flex: 1 1 200px;
+    min-width: 160px;
+}
+
+.filter-price-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.filter-price-slider-row input[type="range"] {
+    flex: 1;
+    margin-top: 0;
+}
+
+.map-open-btn {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1.5px solid var(--coffee-border);
+    border-radius: var(--radius-md);
+    padding: 0.55rem 0.65rem;
+    color: var(--coffee-medium);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.map-open-btn:hover {
+    background: var(--coffee-foam);
+    color: var(--coffee-bean);
+    border-color: var(--coffee-medium);
+}
+
+/* World map bean markers — strip Leaflet's default white box */
+.bean-map-marker {
+    background: none !important;
+    border: none !important;
+    cursor: pointer;
+}
+.bean-map-tip {
+    background: var(--coffee-bean) !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    color: var(--coffee-foam) !important;
+    font-family: var(--font-body) !important;
+    font-size: 0.82rem !important;
+    padding: 0.3rem 0.65rem !important;
+    box-shadow: 0 2px 8px rgba(58,36,24,0.25) !important;
+    white-space: nowrap;
+}
+.bean-map-tip::before { display: none !important; }
+
+/* World map modal */
+.map-modal {
+    max-width: 820px;
+    width: 95vw;
+}
+.world-map-container {
+    height: 460px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--coffee-border);
+}
+.map-hint {
+    font-size: 0.8rem;
+    color: var(--coffee-muted);
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+.filter-notes-section {
+    width: 100%;
+}
+
+/* Multi-select dropdown */
+.multi-select {
+    position: relative;
+}
+
+.multi-select-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 0.9rem;
+    background: var(--coffee-paper);
+    color: var(--coffee-text);
+    border: 1.5px solid var(--coffee-border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 400;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    gap: 0.4rem;
+}
+.multi-select-btn:hover {
+    background: var(--coffee-paper);
+    color: var(--coffee-text);
+    border-color: var(--coffee-medium);
+}
+.multi-select-btn.has-selection {
+    border-color: var(--coffee-medium);
+    color: var(--coffee-bean);
+}
+
+.ms-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ms-caret {
+    font-size: 0.7rem;
+    color: var(--coffee-muted);
+    flex-shrink: 0;
+}
+
+.ms-panel {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;
+    background: var(--coffee-paper);
+    border: 1.5px solid var(--coffee-medium);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    z-index: 200;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.ms-option {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: var(--coffee-text);
+    border-bottom: 1px solid var(--coffee-border);
+    user-select: none;
+}
+.ms-option:last-child { border-bottom: none; }
+.ms-option:hover { background: var(--coffee-foam); }
+
+.ms-option input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+    border: none;
+    flex-shrink: 0;
+    accent-color: var(--coffee-medium);
+    cursor: pointer;
+}
+
+/* Autocomplete */
+.autocomplete-list {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;
+    background: var(--coffee-paper);
+    border: 1.5px solid var(--coffee-medium);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    z-index: 200;
+    list-style: none;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.autocomplete-item {
+    padding: 0.6rem 0.9rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--coffee-text);
+    border-bottom: 1px solid var(--coffee-border);
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover {
+    background: var(--coffee-foam);
+    color: var(--coffee-bean);
+}
+
+/* Tasting note chips */
+.notes-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.35rem;
+}
+
+.note-chip {
+    background: var(--coffee-foam);
+    color: var(--coffee-medium);
+    border: 1.5px solid var(--coffee-border);
+    padding: 0.25rem 0.65rem;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    flex: 0 0 auto;
+    line-height: 1.4;
+}
+.note-chip:hover {
+    background: var(--coffee-cream);
+    border-color: var(--coffee-medium);
+    color: var(--coffee-bean);
+}
+.note-chip.active {
+    background: var(--coffee-medium);
+    color: #fff;
+    border-color: var(--coffee-medium);
+}
+
+/* Price range slider */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--coffee-border);
+    border-radius: 2px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--coffee-medium);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--coffee-paper);
+    box-shadow: 0 1px 4px rgba(58, 36, 24, 0.25);
+}
+input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--coffee-medium);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--coffee-paper);
+    box-shadow: 0 1px 4px rgba(58, 36, 24, 0.25);
+}
+
+/* "Mehr" button active-filter indicator dot */
+.filter-more-btn.has-active::after {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--coffee-accent);
+    border-radius: 50%;
+    margin-left: 5px;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
 }
 
 .coffee-grid {
@@ -460,6 +761,7 @@ button[data-action="unfav"]:hover::after {
 .coffee-card.expandable:hover .brew-footer {
     opacity: 1;
 }
+/* TODO: brew-expand, brew-expand-inner, brew-footer, .coffee-card.expandable — toter Code, kein JS/HTML verwendet diese Klassen mehr */
 .brew-expand {
     max-height: 0;
     overflow: hidden;
@@ -510,6 +812,17 @@ button[data-action="unfav"]:hover::after {
     gap: 0.35rem;
     padding: 0.4rem 0 0.1rem;
     align-items: center;
+}
+.card-stars-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--coffee-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-right: 0.15rem;
+    flex-shrink: 0;
+    cursor: default;
+    user-select: none;
 }
 .card-star {
     cursor: pointer;
@@ -719,9 +1032,14 @@ button[data-action="unfav"]:hover::after {
 }
 
 @media (max-width: 768px) {
-    .filter-bar {
-        grid-template-columns: 1fr;
+    .filter-field, .filter-search-wrap, .filter-price-wrap {
+        flex: 1 1 100%;
     }
+    .filter-reset-wrap {
+        width: 100%;
+        justify-content: stretch;
+    }
+    .filter-reset-wrap button { flex: 1; }
     .coffee-grid {
         grid-template-columns: 1fr;
     }
@@ -735,8 +1053,3 @@ button[data-action="unfav"]:hover::after {
     .auth-card { padding: 1.8rem 1.4rem; }
 }
 
-@media (min-width: 1024px) {
-    .filter-bar {
-        grid-template-columns: 2fr 1fr 1fr 1fr auto;
-    }
-}
