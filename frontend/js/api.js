@@ -73,6 +73,8 @@ const API = {
         return request("POST", "/auth/login", { username, password });
     },
 
+    // Query params (roastLevel, origin, search) are kept for direct API consumers.
+    // The frontend passes no params and filters the full catalogue client-side.
     listCoffees(params = {}) {
         const qs = new URLSearchParams();
         if (params.roastLevel) qs.set("roastLevel", params.roastLevel);

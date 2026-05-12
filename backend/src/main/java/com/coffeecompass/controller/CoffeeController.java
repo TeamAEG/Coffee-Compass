@@ -3,6 +3,7 @@ package com.coffeecompass.controller;
 import com.coffeecompass.dto.CoffeeDto;
 import com.coffeecompass.service.BrewService;
 import com.coffeecompass.service.CoffeeService;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/coffees")
@@ -28,7 +30,12 @@ public class CoffeeController {
             @RequestParam(required = false) String roastLevel,
             @RequestParam(required = false) String origin,
             @RequestParam(required = false) String search) {
-        return ResponseEntity.ok(coffeeService.findAll(roastLevel, origin, search));
+        // Query params kept for direct API consumers — the frontend loads the full catalogue and filters client-side
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS)
+                        .cachePublic()
+                        .staleWhileRevalidate(24, TimeUnit.HOURS))
+                .body(coffeeService.findAll(roastLevel, origin, search));
     }
 
     @GetMapping("/{id}")

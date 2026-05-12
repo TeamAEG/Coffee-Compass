@@ -1,6 +1,8 @@
 package com.coffeecompass.service;
 
 import com.coffeecompass.dto.CoffeeDto;
+import com.coffeecompass.model.CoffeeCacheEntity;
+import com.coffeecompass.repository.CoffeeCacheRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -15,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.InputStream;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,8 +27,12 @@ public class CoffeeService {
 
     private static final Logger log = LoggerFactory.getLogger(CoffeeService.class);
 
+    // Loffee Labs is only called when no cache entry is newer than this
+    private static final Duration CACHE_TTL = Duration.ofHours(24);
+
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final CoffeeCacheRepository cacheRepo;
     private final String loffeeBaseUrl;
     private final String loffeeApiKey;
 
@@ -32,10 +40,12 @@ public class CoffeeService {
 
     public CoffeeService(RestTemplate restTemplate,
                          ObjectMapper objectMapper,
+                         CoffeeCacheRepository cacheRepo,
                          @Value("${app.external.loffee-base-url}") String loffeeBaseUrl,
                          @Value("${app.external.loffee-api-key}") String loffeeApiKey) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.cacheRepo = cacheRepo;
         this.loffeeBaseUrl = loffeeBaseUrl;
         this.loffeeApiKey = loffeeApiKey;
     }
@@ -43,7 +53,16 @@ public class CoffeeService {
     @PostConstruct
     public void init() {
         loadSeedData();
-        tryLoadExternalData();
+        int seedCount = coffeeIndex.size();
+
+        Instant cutoff = Instant.now().minus(CACHE_TTL);
+        if (cacheRepo.existsByFetchedAtAfter(cutoff)) {
+            cacheRepo.findAll().forEach(e -> coffeeIndex.putIfAbsent(e.getId(), toDto(e)));
+            log.info("Loaded {} external coffees from H2 cache", coffeeIndex.size() - seedCount);
+        } else {
+            tryLoadExternalData();
+        }
+
         log.info("Coffee Compass loaded {} coffees in total", coffeeIndex.size());
     }
 
@@ -70,35 +89,54 @@ public class CoffeeService {
             headers.set("Authorization", loffeeApiKey);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            int added = 0;
-            added += fetchBeans(loffeeBaseUrl + "/beans?limit=200", entity);
-            added += fetchBeans(loffeeBaseUrl + "/beans?limit=200&roaster=Kaffeelix", entity);
+            List<CoffeeDto> fetched = new ArrayList<>();
+            Set<String> seen = new HashSet<>();
+            for (CoffeeDto dto : fetchBeans(loffeeBaseUrl + "/beans?limit=200", entity)) {
+                if (seen.add(dto.getId())) fetched.add(dto);
+            }
+            for (CoffeeDto dto : fetchBeans(loffeeBaseUrl + "/beans?limit=200&roaster=Kaffeelix", entity)) {
+                if (seen.add(dto.getId())) fetched.add(dto);
+            }
 
-            log.info("Loaded {} coffees from Loffee Labs", added);
+            Instant now = Instant.now();
+            try {
+                cacheRepo.deleteAll();
+                cacheRepo.saveAll(fetched.stream().map(dto -> toEntity(dto, now)).collect(Collectors.toList()));
+                log.info("Cached {} Loffee Labs coffees to H2", fetched.size());
+            } catch (Exception cacheEx) {
+                log.warn("Failed to persist to H2 cache: {}", cacheEx.getMessage());
+            }
+
+            fetched.forEach(dto -> coffeeIndex.putIfAbsent(dto.getId(), dto));
+            log.info("Loaded {} coffees from Loffee Labs", fetched.size());
         } catch (Exception e) {
-            log.warn("Loffee Labs API unavailable, continuing with seed data only: {}", e.getMessage());
+            log.warn("Loffee Labs API unavailable, trying stale H2 cache: {}", e.getMessage());
+            List<CoffeeCacheEntity> stale = cacheRepo.findAll();
+            if (!stale.isEmpty()) {
+                stale.forEach(ent -> coffeeIndex.putIfAbsent(ent.getId(), toDto(ent)));
+                log.info("Loaded {} coffees from stale H2 cache as fallback", stale.size());
+            } else {
+                log.warn("No H2 cache available, continuing with seed data only");
+            }
         }
     }
 
-    private int fetchBeans(String url, HttpEntity<Void> entity) throws Exception {
+    private List<CoffeeDto> fetchBeans(String url, HttpEntity<Void> entity) throws Exception {
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
         String body = response.getBody();
-        if (body == null) return 0;
+        if (body == null) return Collections.emptyList();
 
         JsonNode root = objectMapper.readTree(body);
         JsonNode list = root.isArray() ? root : root.path("data");
         if (list.isMissingNode()) list = root.path("beans");
 
-        int added = 0;
+        List<CoffeeDto> result = new ArrayList<>();
         for (JsonNode node : list) {
             CoffeeDto dto = mapLoffee(node);
-            if (dto != null && !coffeeIndex.containsKey(dto.getId())) {
-                coffeeIndex.put(dto.getId(), dto);
-                added++;
-            }
+            if (dto != null) result.add(dto);
         }
-        log.info("fetchBeans [{}] → {} new entries", url, added);
-        return added;
+        log.info("fetchBeans [{}] → {} entries", url, result.size());
+        return result;
     }
 
     private CoffeeDto mapLoffee(JsonNode node) {
@@ -132,10 +170,10 @@ public class CoffeeService {
         String degree = node.path("degree").asText(null);
         if (degree != null) {
             String lower = degree.toLowerCase();
-            if (lower.contains("light"))       dto.setRoastLevel("light");
-            else if (lower.contains("dark"))   dto.setRoastLevel("dark");
+            if (lower.contains("light"))                               dto.setRoastLevel("light");
+            else if (lower.contains("dark"))                           dto.setRoastLevel("dark");
             else if (lower.contains("medium") || lower.contains("med")) dto.setRoastLevel("medium");
-            else                               dto.setRoastLevel(degree);
+            else                                                       dto.setRoastLevel(degree);
         }
 
         if (node.has("price-low") && !node.path("price-low").isNull()) {
@@ -157,6 +195,45 @@ public class CoffeeService {
         }
         dto.setTastingNotes(notes);
 
+        return dto;
+    }
+
+    private CoffeeCacheEntity toEntity(CoffeeDto dto, Instant fetchedAt) {
+        CoffeeCacheEntity e = new CoffeeCacheEntity();
+        e.setId(dto.getId());
+        e.setName(dto.getName());
+        e.setRoaster(dto.getRoaster());
+        e.setOrigin(dto.getOrigin());
+        e.setType(dto.getType());
+        e.setProcess(dto.getProcess());
+        e.setRoastLevel(dto.getRoastLevel());
+        e.setPrice(dto.getPrice());
+        e.setDescription(dto.getDescription());
+        e.setFetchedAt(fetchedAt);
+        List<String> notes = dto.getTastingNotes();
+        if (notes != null && !notes.isEmpty()) {
+            e.setTastingNotes(String.join(",", notes));
+        }
+        return e;
+    }
+
+    private CoffeeDto toDto(CoffeeCacheEntity e) {
+        CoffeeDto dto = new CoffeeDto();
+        dto.setId(e.getId());
+        dto.setName(e.getName());
+        dto.setRoaster(e.getRoaster());
+        dto.setOrigin(e.getOrigin());
+        dto.setType(e.getType());
+        dto.setProcess(e.getProcess());
+        dto.setRoastLevel(e.getRoastLevel());
+        dto.setPrice(e.getPrice());
+        dto.setDescription(e.getDescription());
+        String notes = e.getTastingNotes();
+        if (notes != null && !notes.isBlank()) {
+            dto.setTastingNotes(Arrays.asList(notes.split(",")));
+        } else {
+            dto.setTastingNotes(new ArrayList<>());
+        }
         return dto;
     }
 

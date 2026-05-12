@@ -25,7 +25,7 @@ coffee-compass/
 │       ├── security/         JWT Filter, JWT Util
 │       └── service/          Business-Logik
 └── frontend/                 Statisches Frontend
-    ├── index.html            Discover-Seite
+    ├── index.html            Discover-Seite (Suche, Filter, Autocomplete)
     ├── login.html            Login/Register
     ├── favorites.html        Meine Favoriten
     ├── quiz.html             Find Your Perfect Coffee
@@ -40,12 +40,23 @@ coffee-compass/
 
 ## Externe API — Loffee Labs Bean Base
 
-Beim Start ruft das Backend `GET /beans?limit=200` mit einem API-Key im `Authorization`-Header auf. Die Antwort wird auf das interne `CoffeeDto` gemappt. Falls die API nicht erreichbar ist, fällt das System automatisch auf lokale Seed-Daten (`seed-coffees.json`) zurück.
+Beim Start ruft das Backend `GET /beans?limit=200` mit einem API-Key im `Authorization`-Header auf. Die Antwort wird auf das interne `CoffeeDto` gemappt.
 
 ```
 GET https://beta.loffeelabs.com/api/v2/beans?limit=200
 Authorization: <API_KEY>
 ```
+
+**Caching-Strategie (API-Limit schonen):**
+
+1. Beim Start prüft `CoffeeService`, ob die H2-Tabelle `coffee_cache` Einträge enthält, die jünger als 24 Stunden sind.
+2. Wenn ja → Daten aus H2 laden (kein Loffee-Labs-Call).
+3. Wenn nein → API aufrufen, Ergebnisse in H2 persistieren.
+4. Wenn die API nicht erreichbar ist → veraltete H2-Daten als Fallback nutzen; falls kein Cache vorhanden, nur Seed-Daten verwenden.
+
+Da H2 file-basiert ist (`/opt/coffee-compass/data/coffeecompass`), überlebt der Cache Server-Neustarts. Loffee Labs wird also maximal **einmal pro 24 Stunden** aufgerufen, unabhängig davon, wie viele Clients zugreifen oder wie oft der Server neu startet.
+
+Zusätzlich sendet `GET /api/coffees` den HTTP-Header `Cache-Control: public, max-age=3600, stale-while-revalidate=86400`, damit Browser und CDNs die Antwort ebenfalls cachen.
 
 Relevante Felder aus der API-Antwort:
 
@@ -66,7 +77,7 @@ Relevante Felder aus der API-Antwort:
 |---------|-------------------------------|------|-----------------------------------------|
 | POST    | /api/auth/register            | nein | Account erstellen                       |
 | POST    | /api/auth/login               | nein | Login → JWT zurück                      |
-| GET     | /api/coffees                  | nein | Liste aller Kaffees (mit Filtern)       |
+| GET     | /api/coffees                  | nein | Liste aller Kaffees (Query-Params: `roastLevel`, `origin`, `search` — für direkte API-Nutzung; Frontend filtert client-side) |
 | GET     | /api/coffees/{id}             | nein | Detail eines Kaffees                    |
 | GET     | /api/coffees/{id}/brew        | nein | Brew-Empfehlungen                       |
 | GET     | /api/quiz/questions           | nein | Quiz-Fragen                             |
@@ -130,6 +141,7 @@ Authorization: Bearer <JWT>
 - [ ] Zweiten und dritten externen REST-Service einbinden (S1, C1)
 - [ ] XML-Output ergänzen (`produces = {APPLICATION_JSON, APPLICATION_XML}`)
 - [ ] Tests in `backend/src/test/java`
+- [ ] Scheduled Cache-Refresh (z.B. `@Scheduled` alle 24h) damit kein Server-Neustart für frische Daten nötig ist
 
 ## Konzepte erklärt
 
@@ -154,3 +166,14 @@ auf DB-Tabellen abgebildet. `Spring Data JPA` generiert Queries aus Methoden-Nam
 **BCrypt:** Hash-Algorithmus für Passwörter. Hat einen Salt eingebaut und ist
 absichtlich langsam, um Brute-Force zu erschweren. Wir speichern nie das
 Klartext-Passwort, nur den Hash.
+
+**HTTP Caching (`Cache-Control`):** Der Server teilt dem Browser mit, wie lange
+eine Antwort lokal gecacht werden darf. `max-age=3600` bedeutet: 1 Stunde gilt
+die gecachte Antwort als frisch, kein erneuter Request nötig.
+`stale-while-revalidate=86400` erlaubt dem Browser, die veraltete Antwort noch
+bis zu 24 Stunden auszuliefern, während er im Hintergrund eine neue holt.
+
+**Client-side Filtering:** Das Frontend lädt beim Start einmalig den gesamten
+Kaffee-Katalog und filtert danach komplett im Browser. Das ergibt sofortige
+Filter-Reaktion ohne weitere API-Calls und ist bis zu einigen tausend Einträgen
+problemlos performant.
