@@ -24,18 +24,22 @@ coffee-compass/
 │       ├── repository/       Data Access
 │       ├── security/         JWT Filter, JWT Util
 │       └── service/          Business-Logik
-└── frontend/                 Statisches Frontend
-    ├── index.html            Discover-Seite (Suche, Filter, Autocomplete)
-    ├── login.html            Login/Register
-    ├── favorites.html        Meine Favoriten
-    ├── quiz.html             Find Your Perfect Coffee
-    ├── css/styles.css
-    └── js/
-        ├── api.js            HTTP-Client, Auth, shared helpers
-        ├── utils.js          Shared UI utilities (beanSvg, popBeans, renderBrewContent)
-        ├── main.js           Discover-Seite
-        ├── favorites.js      Favoriten-Seite
-        └── quiz.js           Quiz-Seite
+├── frontend/                 Statisches Frontend
+│   ├── index.html            Discover-Seite (Suche, Filter, Autocomplete)
+│   ├── login.html            Login/Register
+│   ├── favorites.html        Meine Favoriten
+│   ├── quiz.html             Find Your Perfect Coffee
+│   ├── css/styles.css
+│   └── js/
+│       ├── api.js            HTTP-Client, Auth, shared helpers
+│       ├── utils.js          Shared UI utilities (beanSvg, popBeans, renderBrewContent)
+│       ├── main.js           Discover-Seite
+│       ├── favorites.js      Favoriten-Seite
+│       └── quiz.js           Quiz-Seite
+└── surprise/                 Zweite, eigenständige FE-Komponente (S2)
+    ├── index.html            "Kaffee-Überraschung" — eine Seite, ein Button
+    ├── style.css             Eigenes Styling, unabhängig von frontend/css
+    └── app.js                Eigener HTTP-Client (kein Re-Use von js/api.js)
 ```
 
 ## Externe API — Loffee Labs Bean Base
@@ -96,6 +100,25 @@ Auth-Header für geschützte Endpoints:
 Authorization: Bearer <JWT>
 ```
 
+## Zweite FE-Komponente — Kaffee-Überraschung (`surprise/`)
+
+Eigenständige, einseitige Komponente (eigenes HTML/CSS/JS, kein Re-Use von
+`frontend/css` oder `frontend/js`). Ein Klick auf "Überrasch mich" liefert
+einen zufälligen Kaffee samt Brew-Empfehlung und einem Quiz-Spruch des Tages.
+
+Genutzte BE-Endpoints (alle `permitAll`, kein Login nötig):
+
+| Methode | Endpoint                  | Verwendung                              |
+|---------|---------------------------|------------------------------------------|
+| GET     | /api/coffees               | Pool an Kaffees, daraus wird zufällig einer gewählt |
+| GET     | /api/coffees/{id}/brew      | Brew-Empfehlung für den gewählten Kaffee  |
+| GET     | /api/quiz/questions         | Liefert die Quiz-Frage/-Option für den "Spruch des Tages" |
+
+Lokal starten (z.B. mit dem VS Code "Live Server"-Plugin oder
+`npx serve -p 8081 surprise`) auf Port **8081** — dieser Origin ist bereits in
+`app.cors.allowed-origins` freigegeben, es ist also keine Backend-Änderung
+nötig.
+
 ## Umgebungsvariablen
 
 | Variable | Beschreibung |
@@ -136,7 +159,7 @@ Authorization: Bearer <JWT>
 | ID | Anforderung                                            | Wo erfüllt                                                |
 |----|--------------------------------------------------------|-----------------------------------------------------------|
 | S1 | Zweiter externer REST-Service                          | **Noch zu ergänzen**                                      |
-| S2 | Zweite FE-Komponente mit ≥3 BE-Endpoints              | `quiz.html` nutzt `/api/quiz/questions`, `/api/match`, `/api/favorites` (POST) |
+| S2 | Zweite, eigenständige FE-Komponente mit ≥3 BE-Endpoints | `surprise/` — eigenes HTML/CSS/JS, kein Re-Use von `frontend/`. Nutzt `GET /api/coffees`, `GET /api/coffees/{id}/brew`, `GET /api/quiz/questions` |
 | S3 | W3C-Konformes HTML                                    | Valider HTML5 — testbar auf https://validator.w3.org      |
 | S4 | Responsive Design                                      | Media Queries in `styles.css` für Mobile (<768px) & Desktop |
 
