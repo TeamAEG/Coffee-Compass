@@ -10,7 +10,7 @@ public class AuthRequest {
     private String username;
 
     @NotBlank
-    @Size(min = 6, max = 100)
+    @Size(min = 8, max = 100)
     private String password;
 
     public String getUsername() { return username; }

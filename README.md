@@ -100,8 +100,20 @@ Authorization: Bearer <JWT>
 
 | Variable | Beschreibung |
 |---|---|
-| `JWT_SECRET` | Secret für JWT-Signierung (HMAC-SHA256) |
+| `JWT_SECRET` | Secret für JWT-Signierung (HMAC-SHA256) — **mind. 32 Zeichen**, sonst startet die App nicht |
 | `LOFFEE_API_KEY` | API-Key für die Loffee Labs Bean Base API |
+
+## Deployment Security
+
+| Maßnahme | Wo umgesetzt |
+|---|---|
+| Rate Limiting (Login, Registration, alle Endpoints) | nginx — konfiguriert auf dem Deployment-Server |
+| HTTPS / TLS | nginx (Reverse Proxy vor Spring Boot) |
+| JWT-Secret-Stärke (min. 32 Bytes) | `JwtUtil` — App startet nicht bei zu kurzem Secret |
+| Passwort-Mindestlänge (8 Zeichen) | `AuthRequest` DTO Validierung |
+| Auth-Pflicht für `/api/favorites` und `/api/ratings` | `SecurityConfig` |
+
+> **Bekanntes Risiko:** `anyRequest().permitAll()` in `SecurityConfig` — neu hinzugefügte Endpoints sind standardmäßig öffentlich, solange keine explizite Regel ergänzt wird. Neue Endpoints immer mit `.authenticated()` oder `.permitAll()` explizit absichern.
 
 ## Erfüllte Requirements
 
