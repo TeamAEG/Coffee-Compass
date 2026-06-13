@@ -6,6 +6,7 @@ import com.coffeecompass.repository.FavoriteRepository;
 import com.coffeecompass.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +25,13 @@ public class FavoriteController {
         this.repository = repository;
     }
 
-    @GetMapping
+    @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<List<Favorite>> list(@AuthenticationPrincipal AuthenticatedUser user) {
         requireAuth(user);
         return ResponseEntity.ok(repository.findByUserIdOrderByCreatedAtDesc(user.getUserId()));
     }
 
-    @PostMapping
+    @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<Favorite> create(@AuthenticationPrincipal AuthenticatedUser user,
                                            @Valid @RequestBody FavoriteRequest req) {
         requireAuth(user);
@@ -48,7 +49,7 @@ public class FavoriteController {
         return ResponseEntity.status(HttpStatus.CREATED).body(repository.save(fav));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<Favorite> update(@AuthenticationPrincipal AuthenticatedUser user,
                                            @PathVariable Long id,
                                            @Valid @RequestBody FavoriteRequest req) {
@@ -63,7 +64,7 @@ public class FavoriteController {
         return ResponseEntity.ok(repository.save(fav));
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping(value = "/{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<Favorite> patch(@AuthenticationPrincipal AuthenticatedUser user,
                                           @PathVariable Long id,
                                           @RequestBody Map<String, Object> updates) {

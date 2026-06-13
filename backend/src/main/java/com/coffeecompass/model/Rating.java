@@ -1,11 +1,13 @@
 package com.coffeecompass.model;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "ratings", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"user_id", "coffee_id"})
 })
+@JacksonXmlRootElement(localName = "rating")
 public class Rating {
 
     @Id

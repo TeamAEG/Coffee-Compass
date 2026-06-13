@@ -6,6 +6,7 @@ import com.coffeecompass.repository.RatingRepository;
 import com.coffeecompass.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -23,13 +24,13 @@ public class RatingController {
         this.repository = repository;
     }
 
-    @GetMapping
+    @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<List<Rating>> list(@AuthenticationPrincipal AuthenticatedUser user) {
         requireAuth(user);
         return ResponseEntity.ok(repository.findByUserId(user.getUserId()));
     }
 
-    @PostMapping("/{coffeeId}")
+    @PostMapping(value = "/{coffeeId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<Rating> upsert(@AuthenticationPrincipal AuthenticatedUser user,
                                          @PathVariable String coffeeId,
                                          @Valid @RequestBody RatingRequest req) {

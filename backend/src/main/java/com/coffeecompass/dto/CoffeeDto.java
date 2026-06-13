@@ -1,7 +1,10 @@
 package com.coffeecompass.dto;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+
 import java.util.List;
 
+@JacksonXmlRootElement(localName = "coffee")
 public class CoffeeDto {
     private String id;
     private String name;

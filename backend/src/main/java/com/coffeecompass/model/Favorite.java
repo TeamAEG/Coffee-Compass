@@ -1,5 +1,6 @@
 package com.coffeecompass.model;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import jakarta.persistence.*;
 import java.time.Instant;
 
@@ -7,6 +8,7 @@ import java.time.Instant;
 @Table(name = "favorites", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"user_id", "coffee_id"})
 })
+@JacksonXmlRootElement(localName = "favorite")
 public class Favorite {
 
     @Id

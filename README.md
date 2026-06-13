@@ -168,13 +168,12 @@ nötig.
 | ID | Anforderung                          | Wo erfüllt                                            |
 |----|--------------------------------------|-------------------------------------------------------|
 | C1 | Dritter externer REST-Service        | **Noch zu ergänzen**                                  |
-| C2 | JSON & XML Antworten                 | **Noch zu ergänzen**                                  |
+| C2 | JSON & XML Antworten                 | `produces = {APPLICATION_JSON, APPLICATION_XML}` auf allen GET/POST/PUT/PATCH-Endpoints (`jackson-dataformat-xml`) |
 | C3 | PATCH-Endpoint                       | `PATCH /api/favorites/{id}` in `FavoriteController`   |
 
 ## Nächste Schritte
 
 - [ ] Zweiten und dritten externen REST-Service einbinden (S1, C1)
-- [ ] XML-Output ergänzen (`produces = {APPLICATION_JSON, APPLICATION_XML}`)
 - [ ] Tests in `backend/src/test/java`
 - [ ] Scheduled Cache-Refresh (z.B. `@Scheduled` alle 24h) damit kein Server-Neustart für frische Daten nötig ist
 

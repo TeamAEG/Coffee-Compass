@@ -5,6 +5,7 @@ import com.coffeecompass.service.BrewService;
 import com.coffeecompass.service.CoffeeService;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,7 +26,7 @@ public class CoffeeController {
         this.brewService = brewService;
     }
 
-    @GetMapping
+    @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<List<CoffeeDto>> list(
             @RequestParam(required = false) String roastLevel,
             @RequestParam(required = false) String origin,
@@ -38,13 +39,13 @@ public class CoffeeController {
                 .body(coffeeService.findAll(roastLevel, origin, search));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(value = "/{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<CoffeeDto> detail(@PathVariable String id) {
         return ResponseEntity.ok(coffeeService.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Coffee not found")));
     }
 
-    @GetMapping("/{id}/brew")
+    @GetMapping(value = "/{id}/brew", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<Map<String, Object>> brew(@PathVariable String id) {
         CoffeeDto coffee = coffeeService.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Coffee not found"));

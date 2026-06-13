@@ -1,5 +1,8 @@
 package com.coffeecompass.dto;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+
+@JacksonXmlRootElement(localName = "authResponse")
 public class AuthResponse {
     private String token;
     private String username;

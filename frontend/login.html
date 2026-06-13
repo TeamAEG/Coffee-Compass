@@ -84,7 +84,7 @@
             messageBox.innerHTML = "";
 
             try {
-                const data = mode === "login"
+                const data = mode === "login"  //fast If/else
                     ? await API.login(username, password)
                     : await API.register(username, password);
                 Auth.save(data.token, data.username, data.expiresAt);

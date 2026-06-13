@@ -2,6 +2,7 @@ package com.coffeecompass.controller;
 
 import com.coffeecompass.dto.QuizRequest;
 import com.coffeecompass.service.MatchService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +17,7 @@ public class QuizController {
         this.matchService = matchService;
     }
 
-    @GetMapping("/api/quiz/questions")
+    @GetMapping(value = "/api/quiz/questions", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<List<Map<String, Object>>> questions() {
         List<Map<String, Object>> questions = new ArrayList<>();
 
@@ -58,7 +59,7 @@ public class QuizController {
         return ResponseEntity.ok(questions);
     }
 
-    @PostMapping("/api/match")
+    @PostMapping(value = "/api/match", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public ResponseEntity<List<Map<String, Object>>> match(@RequestBody QuizRequest quiz) {
         return ResponseEntity.ok(matchService.match(quiz));
     }
