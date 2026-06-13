@@ -10,6 +10,12 @@ backend/target/
 # VS Code
 .vscode/
 
+# Claude Code
+.claude/
+
+# Generated docs
+docs/
+
 # OS
 .DS_Store
 Thumbs.db
