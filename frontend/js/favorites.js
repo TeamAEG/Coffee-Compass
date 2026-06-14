@@ -1,3 +1,21 @@
+// =============================================================================
+// FAVORITES PAGE (favorites.js)
+//
+// Quick map of this file:
+//   Navbar & setup        – this page requires login
+//   Cached DOM elements & state
+//   Initial load           – fetch the user's favorites
+//   Render                 – build the favorite cards + star ratings
+//   Card interactions      – star rating, edit/detail/delete buttons
+//   Star hover preview     – mouseover/mouseout on the rating beans
+//   Edit modal             – change notes + rating for a favorite
+//   Delete                 – remove a favorite
+//   Detail modal           – full coffee details + brew tips
+//   Boot                   – starts everything
+// =============================================================================
+
+// ── Navbar & setup ────────────────────────────────────────────────────────────
+// This page requires a logged-in user; redirects to login.html otherwise.
 Auth.requireLogin();
 
 document.getElementById("usernameLabel").textContent = Auth.username() || "";
@@ -8,12 +26,15 @@ logoutBtn.addEventListener("click", () => {
     window.location.href = "login.html";
 });
 
+// ── Cached DOM elements & shared state ───────────────────────────────────────
 const listEl = document.getElementById("favoritesList");
 const messageBox = document.getElementById("messageBox");
 const modalContainer = document.getElementById("modalContainer");
 
 let favorites = [];
 
+// ── Initial load ──────────────────────────────────────────────────────────────
+// Fetches the user's saved favorites and renders the list.
 async function loadFavorites() {
     listEl.innerHTML = `<div class="loading-overlay"><div class="spinner"></div></div>`;
     messageBox.innerHTML = "";
@@ -26,6 +47,7 @@ async function loadFavorites() {
     }
 }
 
+// ── Render ────────────────────────────────────────────────────────────────────
 function render() {
     if (!favorites.length) {
         listEl.innerHTML = `
@@ -61,6 +83,7 @@ function renderCard(f) {
 }
 
 
+// Renders 5 rating beans; reused both on the cards and inside the edit modal.
 function renderStars(rating, favId) {
     let html = "";
     for (let i = 1; i <= 5; i++) {
@@ -69,6 +92,10 @@ function renderStars(rating, favId) {
     return html;
 }
 
+// ── Card interactions ─────────────────────────────────────────────────────────
+// One click listener for the whole list (event delegation): handles star
+// rating, the "Notizen"/"Details"/"Entfernen" buttons, and clicking the card
+// itself (opens the detail modal).
 listEl.addEventListener("click", async (e) => {
     const star = e.target.closest(".card-star");
     if (star) {
@@ -99,6 +126,8 @@ listEl.addEventListener("click", async (e) => {
     if (fav) openDetailModal(fav.coffeeId);
 });
 
+// ── Star hover preview ───────────────────────────────────────────────────────
+// Temporarily fills beans up to the hovered one; mouseout restores the saved rating.
 listEl.addEventListener("mouseover", (e) => {
     const star = e.target.closest(".card-star");
     if (!star) return;
@@ -123,6 +152,7 @@ listEl.addEventListener("mouseout", (e) => {
     });
 });
 
+// Saves a new star rating for a favorite via PATCH and re-renders.
 async function updateRating(favId, rating) {
     try {
         const updated = await API.patchFavorite(favId, { rating });
@@ -136,6 +166,9 @@ async function updateRating(favId, rating) {
     }
 }
 
+// ── Edit modal ────────────────────────────────────────────────────────────────
+// Lets the user change their notes and star rating for a favorite, then saves
+// via PUT (replaces the whole favorite).
 function openEditModal(fav) {
     modalContainer.innerHTML = `
         <div class="modal-backdrop" id="modalBackdrop">
@@ -220,6 +253,7 @@ function openEditModal(fav) {
     });
 }
 
+// ── Delete ────────────────────────────────────────────────────────────────────
 async function deleteFavorite(fav) {
     if (!confirm(`"${fav.coffeeName}" aus Favoriten entfernen?`)) return;
     try {
@@ -231,6 +265,9 @@ async function deleteFavorite(fav) {
     }
 }
 
+// ── Detail modal ──────────────────────────────────────────────────────────────
+// Same pattern as on the Discover page: fetch coffee + brew info and show them
+// in a modal.
 async function openDetailModal(coffeeId) {
     modalContainer.innerHTML = `
         <div class="modal-backdrop" id="modalBackdrop">
@@ -283,4 +320,5 @@ function closeModal() {
     modalContainer.innerHTML = "";
 }
 
+// ── Boot ──────────────────────────────────────────────────────────────────────
 loadFavorites();

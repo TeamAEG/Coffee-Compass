@@ -1,3 +1,27 @@
+// =============================================================================
+// DISCOVER PAGE (main.js)
+//
+// Quick map of this file — search for these section titles to jump around:
+//   Navbar               – Login/Logout button
+//   Cached DOM elements & shared state
+//   Initial load         – fetch coffees/favorites/ratings on page load
+//   Multi-select helpers – generic "dropdown with checkboxes" widget
+//   Populate dynamic filter controls from loaded data
+//   Client-side filtering
+//   Autocomplete
+//   Price label
+//   More-filters badge
+//   Event listeners
+//   Render               – build the coffee cards
+//   Card interactions    – clicks inside the card list (stars, compare, etc.)
+//   Favorites
+//   Compare / Compare modal
+//   Detail modal
+//   World map            – Leaflet map of coffee origins
+//   Boot                 – starts everything
+// =============================================================================
+
+// ── Navbar: show "Login" or "Logout" depending on whether the user is signed in ──
 const usernameLabel = document.getElementById("usernameLabel");
 const logoutBtn = document.getElementById("logoutBtn");
 
@@ -16,6 +40,8 @@ if (Auth.isLoggedIn()) {
     });
 }
 
+// ── Cached DOM elements & shared state ───────────────────────────────────────
+// These variables are read and written from almost every function below.
 const listEl            = document.getElementById("coffeeList");
 const messageBox        = document.getElementById("messageBox");
 const searchInput       = document.getElementById("search");
@@ -44,6 +70,9 @@ const ROAST_LABELS = { light: "Hell", medium: "Mittel", dark: "Dunkel" };
 
 // ── Initial load ─────────────────────────────────────────────────────────────
 
+// Runs once when the page loads: fetches all coffees plus the current user's
+// favorites/ratings, builds the filter UI from that data, and shows the
+// (unfiltered) list for the first time.
 async function loadAllCoffees() {
     listEl.innerHTML = `<div class="loading-overlay"><div class="spinner"></div><p style="margin-top: 0.6rem;">Lade Kaffees...</p></div>`;
     messageBox.innerHTML = "";
@@ -66,6 +95,10 @@ async function loadAllCoffees() {
 
 // ── Multi-select helpers ─────────────────────────────────────────────────────
 
+// Shared logic for the "dropdown with checkboxes" filters (Röstung, Herkunft,
+// Typ, Prozess). populateMsPanel() builds the dropdown's checkbox list the
+// first time it's called and just refreshes it on later calls.
+
 // Split comma-separated field values across all coffees into unique sorted tokens
 function splitTokens(coffees, field) {
     const seen = new Set();
@@ -83,6 +116,8 @@ function populateMsPanel(msId, values, activeSet, labelFn) {
     const btn       = container.querySelector(".multi-select-btn");
     const labelEl   = btn.querySelector(".ms-label");
 
+    // Panel + its toggle button are only created once; later calls just refresh
+    // the checkbox list below.
     let panel = container.querySelector(".ms-panel");
     if (!panel) {
         panel = document.createElement("div");
@@ -145,6 +180,8 @@ document.addEventListener("click", closeAllMsPanels);
 
 // ── Populate dynamic filter controls from loaded data ────────────────────────
 
+// Called once after the coffees have loaded: fills the four multi-select
+// dropdowns, sets the price slider's range, and builds the tasting-note chips.
 function populateFilters(coffees) {
     populateMsPanel("roastMultiSelect",   ["light", "medium", "dark"], activeRoasts,    v => ROAST_LABELS[v] || v);
     populateMsPanel("originMultiSelect",  splitTokens(coffees, "origin"),  activeOrigins);
@@ -187,6 +224,9 @@ function populateFilters(coffees) {
 
 // ── Client-side filtering ─────────────────────────────────────────────────────
 
+// Applies the search box + every active filter to `allCoffees`, stores the
+// result in `currentCoffees`, and re-renders the list. Called whenever the
+// user changes any filter.
 function tokenize(str) {
     return (str || "").split(",").map(t => t.trim()).filter(Boolean);
 }
@@ -220,6 +260,9 @@ function filterCoffees() {
 
 // ── Autocomplete ──────────────────────────────────────────────────────────────
 
+// Shows up to 7 matching coffee/roaster names below the search box.
+// Debounced: waits 180ms after the last keystroke before searching, so it
+// doesn't run on every single character typed.
 let acTimer = null;
 function scheduleAutocomplete() {
     clearTimeout(acTimer);
@@ -259,6 +302,7 @@ function hideAutocomplete() {
 
 // ── Price label ───────────────────────────────────────────────────────────────
 
+// Keeps the "€X.XX" / "Alle" text next to the price slider in sync with its value.
 function updatePriceLabel() {
     const val = parseFloat(priceFilter.value);
     priceLabel.textContent = val >= priceMax ? "Alle" : `€${val.toFixed(2)}`;
@@ -267,6 +311,8 @@ function updatePriceLabel() {
 
 // ── More-filters badge ────────────────────────────────────────────────────────
 
+// Highlights the "Mehr ▾" button whenever a filter inside the collapsed
+// "more filters" panel (price, type, process, tasting notes) is active.
 function updateMoreFiltersBadge() {
     const priceVal = parseFloat(priceFilter.value);
     const hasActive = activeNotes.size > 0 || activeTypes.size > 0 || activeProcesses.size > 0
@@ -276,6 +322,7 @@ function updateMoreFiltersBadge() {
 
 // ── Event listeners ───────────────────────────────────────────────────────────
 
+// Wires up the search box, price slider, "Mehr ▾" toggle and the reset button.
 searchInput.addEventListener("input", () => { scheduleAutocomplete(); filterCoffees(); });
 searchInput.addEventListener("blur",  () => setTimeout(hideAutocomplete, 150));
 searchInput.addEventListener("keydown", e => { if (e.key === "Escape") hideAutocomplete(); });
@@ -309,6 +356,7 @@ resetBtn.addEventListener("click", () => {
 
 // ── Render ────────────────────────────────────────────────────────────────────
 
+// Turns `currentCoffees` into the grid of coffee cards (or an empty-state message).
 function renderCoffees(coffees) {
     if (!coffees.length) {
         listEl.innerHTML = `
@@ -366,6 +414,10 @@ function renderCoffeeCard(c) {
 
 // ── Card interactions ─────────────────────────────────────────────────────────
 
+// One click listener for the whole list (event delegation) instead of one per
+// card, since the cards get rebuilt every time the filters change.
+// Handles: star rating, compare toggle, detail button, favorite toggle, and
+// clicking the card itself (opens the detail modal).
 listEl.addEventListener("click", async (e) => {
     const star = e.target.closest(".card-star");
     if (star) {
@@ -440,6 +492,8 @@ listEl.addEventListener("mouseout", (e) => {
 
 // ── Favorites ─────────────────────────────────────────────────────────────────
 
+// Add/remove the current user's favorite via the backend API, then update the
+// button text and card styling to match.
 async function addFavorite(coffee, btn) {
     btn.disabled = true;
     try {
@@ -481,6 +535,8 @@ async function removeFavorite(coffee, btn) {
 
 // ── Compare ───────────────────────────────────────────────────────────────────
 
+// Tracks which coffees (max 3) are selected for the comparison modal and keeps
+// the floating "compare bar" at the bottom of the page in sync.
 function toggleCompare(id, btn) {
     if (compareSet.has(id)) {
         compareSet.delete(id);
@@ -541,6 +597,7 @@ document.getElementById("clearCompareBtn").addEventListener("click", () => {
 
 // ── Compare modal ─────────────────────────────────────────────────────────────
 
+// Builds the side-by-side comparison table for the coffees in `compareSet`.
 function openCompareModal() {
     const coffees = [...compareSet].map(id => currentCoffees.find(c => c.id === id)).filter(Boolean);
     if (coffees.length < 2) { alert("Bitte mindestens 2 Kaffees auswählen."); return; }
@@ -588,6 +645,8 @@ function openCompareModal() {
 
 // ── Detail modal ──────────────────────────────────────────────────────────────
 
+// Opens a modal with full details + brew recommendations for a single coffee
+// (fetched from the backend).
 async function openDetailModal(coffeeId) {
     modalContainer.innerHTML = `
         <div class="modal-backdrop" id="modalBackdrop">
@@ -638,6 +697,11 @@ async function openDetailModal(coffeeId) {
 
 // ── World map ─────────────────────────────────────────────────────────────────
 
+// Leaflet map showing where the loaded coffees come from.
+// COUNTRY_COORDS maps a country name to map coordinates; REGION_TO_COUNTRY maps
+// known coffee-growing sub-regions (e.g. "Yirgacheffe") to their country, so
+// an `origin` string can be placed on the map. Clicking a marker filters the
+// list down to that country.
 const COUNTRY_COORDS = {
     "Ethiopia":          [ 9.145,  40.489],
     "Colombia":          [ 4.570, -74.297],
@@ -696,6 +760,7 @@ const REGION_TO_COUNTRY = {
 
 function originToCountry(token) {
     const lower = token.toLowerCase().trim();
+    // First try an exact country-name match, then fall back to the sub-region lookup below
     for (const country of Object.keys(COUNTRY_COORDS)) {
         if (country.toLowerCase() === lower) return country;
     }
@@ -809,4 +874,6 @@ document.getElementById("worldMapBtn").addEventListener("click", openWorldMap);
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
+// Everything starts here: load the data, which then populates the filters and
+// renders the first list of cards.
 loadAllCoffees();
