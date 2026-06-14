@@ -41,6 +41,7 @@ const modalContainer = document.getElementById("modalContainer");
 let questions = [];
 let currentStep = 0;
 let answers = {};
+let resultClickBound = false;
 
 // Loads the quiz questions from the backend and shows the first one.
 async function init() {
@@ -155,7 +156,13 @@ function renderResults(matches) {
         </div>`;
 
     document.getElementById("restartBtn").onclick = restart;
-    quizArea.addEventListener("click", handleResultClick);
+    // renderResults() can run again after a restart, so only attach this once —
+    // otherwise duplicate listeners pile up and handleResultClick fires multiple
+    // times per click.
+    if (!resultClickBound) {
+        quizArea.addEventListener("click", handleResultClick);
+        resultClickBound = true;
+    }
 }
 
 // Renders a single match card, including its match-score percentage.
