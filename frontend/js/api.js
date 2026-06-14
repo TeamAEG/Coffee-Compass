@@ -1,8 +1,18 @@
+// =============================================================================
+// SHARED API CLIENT & AUTH HELPERS (api.js)
+// Loaded on every page. Provides:
+//   Auth    – stores the JWT/username in localStorage (login state)
+//   request – generic fetch wrapper (adds JWT header, parses JSON, throws on error)
+//   API     – one method per backend endpoint
+//   escapeHtml / showError – small shared UI helpers
+// =============================================================================
 const API_BASE = "https://coffee-compass.net/api";
 const TOKEN_KEY = "cc_token";
 const USER_KEY = "cc_username";
 const EXPIRES_KEY = "cc_expires";
 
+// Keeps the user logged in across page reloads/tabs by storing the JWT,
+// username and expiry timestamp in localStorage.
 const Auth = {
     save(token, username, expiresAt) {
         localStorage.setItem(TOKEN_KEY, token);
@@ -16,6 +26,7 @@ const Auth = {
     },
     token() { return localStorage.getItem(TOKEN_KEY); },
     username() { return localStorage.getItem(USER_KEY); },
+    // Side effect: also clears storage if the token has already expired.
     isLoggedIn() {
         const t = this.token();
         const exp = parseInt(localStorage.getItem(EXPIRES_KEY) || "0", 10);
@@ -33,6 +44,9 @@ const Auth = {
     }
 };
 
+// Generic fetch wrapper used by every API call below. Attaches the JWT
+// (if logged in), sends/parses JSON, and throws an Error for non-2xx responses
+// so callers can just use try/catch.
 async function request(method, path, body) {
     const headers = { "Content-Type": "application/json" };
     const token = Auth.token();
@@ -43,6 +57,8 @@ async function request(method, path, body) {
 
     const res = await fetch(API_BASE + path, opts);
 
+    // Token expired or invalid: log the user out and bounce to login,
+    // unless this request *is* the login/register call itself.
     if (res.status === 401) {
         Auth.clear();
         if (!path.startsWith("/auth/")) {
@@ -65,6 +81,7 @@ async function request(method, path, body) {
     return data;
 }
 
+// One method per backend endpoint — thin wrappers around request().
 const API = {
     register(username, password) {
         return request("POST", "/auth/register", { username, password });
@@ -120,6 +137,9 @@ const API = {
     }
 };
 
+// ── Shared UI helpers ─────────────────────────────────────────────────────────
+// escapeHtml: prevents user-entered text (coffee names, notes, etc.) from being
+// interpreted as HTML when inserted via innerHTML.
 function escapeHtml(str) {
     if (str == null) return "";
     return String(str)

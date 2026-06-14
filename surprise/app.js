@@ -1,3 +1,14 @@
+// =============================================================================
+// "KAFFEE-ÜBERRASCHUNG" (surprise/app.js)
+//
+// Standalone page, independent of frontend/js — has its own copies of
+// escapeHtml() and a small fetch-based API client (no shared Auth/API objects).
+//
+// Quick map of this file:
+//   loadPools    – fetch the coffee catalogue + quiz questions (once)
+//   surprise     – pick a random coffee + brew + "quote of the day" on button click
+//   renderResult – build the result HTML
+// =============================================================================
 const API_BASE = "https://coffee-compass.net/api";
 
 const resultEl = document.getElementById("result");
@@ -16,10 +27,13 @@ function escapeHtml(str) {
         .replace(/'/g, "&#039;");
 }
 
+// Picks one random element from an array.
 function randomFrom(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// Fetches the full coffee catalogue + quiz questions once and caches them in
+// `coffees` / `questions` for subsequent surprises.
 async function loadPools() {
     const [coffeeRes, questionRes] = await Promise.all([
         fetch(`${API_BASE}/coffees`),
@@ -30,6 +44,8 @@ async function loadPools() {
     questions = await questionRes.json();
 }
 
+// Main button handler: picks a random coffee, fetches its brew recommendation,
+// picks a random quiz question/option as the "quote of the day", and renders it.
 async function surprise() {
     btn.disabled = true;
     resultEl.innerHTML = `<p class="loading">Mische die Bohnen...</p>`;
@@ -52,6 +68,7 @@ async function surprise() {
     }
 }
 
+// Builds the HTML for one surprise result.
 function renderResult(coffee, brew, question, option) {
     const notes = (coffee.tastingNotes || [])
         .map(n => `<span class="chip">${escapeHtml(n)}</span>`)

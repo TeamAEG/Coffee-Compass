@@ -1,3 +1,20 @@
+// =============================================================================
+// QUIZ PAGE (quiz.js) – "Find Your Perfect Coffee"
+//
+// Quick map of this file:
+//   Navbar              – Login/Logout button
+//   Cached DOM elements & state
+//   init                – load the quiz questions
+//   renderStep          – show one question at a time, with progress bar
+//   renderSubmit        – send answers to the backend, get top matches
+//   renderResults / renderMatchCard – show the recommended coffees
+//   Detail modal         – full coffee details + brew tips
+//   handleResultClick   – save-to-favorites / open-details buttons on results
+//   restart             – reset and start the quiz again
+//   Boot                – starts everything
+// =============================================================================
+
+// ── Navbar: show "Login" or "Logout" depending on whether the user is signed in ──
 const usernameLabel = document.getElementById("usernameLabel");
 const logoutBtn = document.getElementById("logoutBtn");
 
@@ -16,6 +33,8 @@ if (Auth.isLoggedIn()) {
     });
 }
 
+// ── Cached DOM elements & shared state ───────────────────────────────────────
+// `answers` collects { questionKey: chosenValue } as the user goes through the quiz.
 const quizArea = document.getElementById("quizArea");
 const modalContainer = document.getElementById("modalContainer");
 
@@ -23,6 +42,7 @@ let questions = [];
 let currentStep = 0;
 let answers = {};
 
+// Loads the quiz questions from the backend and shows the first one.
 async function init() {
     quizArea.innerHTML = `<div class="loading-overlay"><div class="spinner"></div></div>`;
     try {
@@ -33,6 +53,8 @@ async function init() {
     }
 }
 
+// Renders the current question (with progress bar + Zurück/Weiter buttons).
+// Once all questions are answered, switches to the results view.
 function renderStep() {
     if (currentStep >= questions.length) {
         renderSubmit();
@@ -88,6 +110,7 @@ function renderStep() {
     });
 }
 
+// Sends all collected answers to the backend and shows the resulting matches.
 async function renderSubmit() {
     quizArea.innerHTML = `
         <div class="quiz-card">
@@ -104,6 +127,7 @@ async function renderSubmit() {
     }
 }
 
+// Shows the top coffee matches as cards, ranked by match score.
 function renderResults(matches) {
     if (!matches.length) {
         quizArea.innerHTML = `
@@ -134,6 +158,7 @@ function renderResults(matches) {
     quizArea.addEventListener("click", handleResultClick);
 }
 
+// Renders a single match card, including its match-score percentage.
 function renderMatchCard(m, maxScore) {
     const c = m.coffee;
     const pct = Math.round((m.matchScore / maxScore) * 100);
@@ -161,6 +186,9 @@ function renderMatchCard(m, maxScore) {
 }
 
 
+// ── Detail modal ──────────────────────────────────────────────────────────────
+// Same pattern as on the Discover page: fetch coffee + brew info and show them
+// in a modal.
 async function openDetailModal(coffeeId) {
     modalContainer.innerHTML = `
         <div class="modal-backdrop" id="modalBackdrop">
@@ -209,6 +237,8 @@ async function openDetailModal(coffeeId) {
     }
 }
 
+// Click handler for the results grid (event delegation): "Details" opens the
+// modal above, "★ Zu Favoriten" saves that coffee to the user's favorites.
 async function handleResultClick(e) {
     const btn = e.target.closest("button[data-action]");
     if (!btn) {
@@ -253,10 +283,12 @@ async function handleResultClick(e) {
     }
 }
 
+// Resets the quiz state and shows the first question again.
 function restart() {
     currentStep = 0;
     answers = {};
     renderStep();
 }
 
+// ── Boot ──────────────────────────────────────────────────────────────────────
 init();
