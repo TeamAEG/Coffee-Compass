@@ -141,7 +141,7 @@ function renderResults(matches) {
         return;
     }
 
-    const max = Math.max(...matches.map(m => m.matchScore));
+    const max = Math.max(...matches.map(m => m.matchScore)); //"..." spread operator, unpacks Array
 
     quizArea.innerHTML = `
         <div style="text-align: center; margin-bottom: 1.5rem;">
