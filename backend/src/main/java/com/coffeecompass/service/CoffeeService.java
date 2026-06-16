@@ -94,6 +94,10 @@ public class CoffeeService {
             for (CoffeeDto dto : fetchBeans(loffeeBaseUrl + "/beans?limit=200", entity)) {
                 if (seen.add(dto.getId())) fetched.add(dto);
             }
+
+            // Loffee Labs rate-limits to 1 request per 3 seconds
+            Thread.sleep(3500);
+
             for (CoffeeDto dto : fetchBeans(loffeeBaseUrl + "/beans?limit=200&roaster=Kaffeelix", entity)) {
                 if (seen.add(dto.getId())) fetched.add(dto);
             }
